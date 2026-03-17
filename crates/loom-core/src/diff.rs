@@ -26,7 +26,11 @@ impl fmt::Display for Change {
             ChangeKind::Changed => "~",
         };
         match &self.detail {
-            Some(detail) => write!(f, "  {} {}: {} ({})", prefix, self.category, self.name, detail),
+            Some(detail) => write!(
+                f,
+                "  {} {}: {} ({})",
+                prefix, self.category, self.name, detail
+            ),
             None => write!(f, "  {} {}: {}", prefix, self.category, self.name),
         }
     }
@@ -92,7 +96,11 @@ fn diff_states(old: &WorkflowIR, new: &WorkflowIR, changes: &mut Vec<Change>) {
                 kind: ChangeKind::Added,
                 category: "state".into(),
                 name: name.clone(),
-                detail: Some(format!("{} \"{}\"", state_kind_label(new_state), new_state.display_name())),
+                detail: Some(format!(
+                    "{} \"{}\"",
+                    state_kind_label(new_state),
+                    new_state.display_name()
+                )),
             }),
             Some(old_state) => {
                 diff_single_state(name, old_state, new_state, changes);
@@ -106,7 +114,11 @@ fn diff_states(old: &WorkflowIR, new: &WorkflowIR, changes: &mut Vec<Change>) {
                 kind: ChangeKind::Removed,
                 category: "state".into(),
                 name: name.clone(),
-                detail: Some(format!("{} \"{}\"", state_kind_label(old_state), old_state.display_name())),
+                detail: Some(format!(
+                    "{} \"{}\"",
+                    state_kind_label(old_state),
+                    old_state.display_name()
+                )),
             });
         }
     }
@@ -159,8 +171,7 @@ fn diff_steps(old: &WorkflowIR, new: &WorkflowIR, changes: &mut Vec<Change>) {
                         name: name.clone(),
                         detail: Some(format!(
                             "{}->{} -> {}->{}",
-                            old_step.queue, old_step.action,
-                            new_step.queue, new_step.action
+                            old_step.queue, old_step.action, new_step.queue, new_step.action
                         )),
                     });
                 }
@@ -198,8 +209,10 @@ fn diff_phases(old: &WorkflowIR, new: &WorkflowIR, changes: &mut Vec<Change>) {
                         name: name.clone(),
                         detail: Some(format!(
                             "produce {}->{}, gate {}->{}",
-                            old_phase.produce_step, new_phase.produce_step,
-                            old_phase.gate_step, new_phase.gate_step
+                            old_phase.produce_step,
+                            new_phase.produce_step,
+                            old_phase.gate_step,
+                            new_phase.gate_step
                         )),
                     });
                 }
@@ -255,10 +268,7 @@ fn diff_single_profile(
             kind: ChangeKind::Changed,
             category: "profile".into(),
             name: name.to_string(),
-            detail: Some(format!(
-                "phases {:?} -> {:?}",
-                old.phases, new.phases
-            )),
+            detail: Some(format!("phases {:?} -> {:?}", old.phases, new.phases)),
         });
     }
     if old.output != new.output {
@@ -288,13 +298,17 @@ fn diff_outcomes(old: &WorkflowIR, new: &WorkflowIR, changes: &mut Vec<Change>) 
             }
             Some(old_prompt) => {
                 diff_outcome_map(
-                    prompt_name, "success",
-                    &old_prompt.success, &new_prompt.success,
+                    prompt_name,
+                    "success",
+                    &old_prompt.success,
+                    &new_prompt.success,
                     changes,
                 );
                 diff_outcome_map(
-                    prompt_name, "failure",
-                    &old_prompt.failure, &new_prompt.failure,
+                    prompt_name,
+                    "failure",
+                    &old_prompt.failure,
+                    &new_prompt.failure,
                     changes,
                 );
             }
@@ -353,13 +367,11 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_v1() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     fn fixture_v2() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc_v2")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc_v2")
     }
 
     #[test]
@@ -368,12 +380,14 @@ mod tests {
         let (new_ir, _) = crate::load_workflow(&fixture_v2()).unwrap();
         let changes = diff_workflows(&old_ir, &new_ir);
 
-        let added_states: Vec<_> = changes.iter()
+        let added_states: Vec<_> = changes
+            .iter()
             .filter(|c| c.category == "state" && c.kind == ChangeKind::Added)
             .collect();
         assert!(
             added_states.iter().any(|c| c.name == "ready_for_triage"),
-            "expected added state ready_for_triage, got: {:?}", added_states
+            "expected added state ready_for_triage, got: {:?}",
+            added_states
         );
     }
 
@@ -383,12 +397,14 @@ mod tests {
         let (new_ir, _) = crate::load_workflow(&fixture_v2()).unwrap();
         let changes = diff_workflows(&old_ir, &new_ir);
 
-        let removed_states: Vec<_> = changes.iter()
+        let removed_states: Vec<_> = changes
+            .iter()
             .filter(|c| c.category == "state" && c.kind == ChangeKind::Removed)
             .collect();
         assert!(
             removed_states.iter().any(|c| c.name == "deferred"),
-            "expected removed state deferred, got: {:?}", removed_states
+            "expected removed state deferred, got: {:?}",
+            removed_states
         );
     }
 
@@ -402,9 +418,14 @@ mod tests {
             c.category == "state"
                 && c.name == "planning"
                 && c.kind == ChangeKind::Changed
-                && c.detail.as_deref().map_or(false, |d| d.contains("display_name"))
+                && c.detail
+                    .as_deref()
+                    .is_some_and(|d| d.contains("display_name"))
         });
-        assert!(changed.is_some(), "expected display_name change for planning");
+        assert!(
+            changed.is_some(),
+            "expected display_name change for planning"
+        );
     }
 
     #[test]
@@ -430,12 +451,14 @@ mod tests {
         let (new_ir, _) = crate::load_workflow(&fixture_v2()).unwrap();
         let changes = diff_workflows(&old_ir, &new_ir);
 
-        let added_profiles: Vec<_> = changes.iter()
+        let added_profiles: Vec<_> = changes
+            .iter()
             .filter(|c| c.category == "profile" && c.kind == ChangeKind::Added)
             .collect();
         assert!(
             added_profiles.iter().any(|c| c.name == "triage"),
-            "expected added profile triage, got: {:?}", added_profiles
+            "expected added profile triage, got: {:?}",
+            added_profiles
         );
     }
 
@@ -443,7 +466,11 @@ mod tests {
     fn test_diff_no_changes_same_workflow() {
         let (ir, _) = crate::load_workflow(&fixture_v1()).unwrap();
         let changes = diff_workflows(&ir, &ir);
-        assert!(changes.is_empty(), "expected no changes, got: {:?}", changes.len());
+        assert!(
+            changes.is_empty(),
+            "expected no changes, got: {:?}",
+            changes.len()
+        );
     }
 
     #[test]
@@ -453,8 +480,17 @@ mod tests {
         let changes = diff_workflows(&old_ir, &new_ir);
         let output = format_diff(&changes);
 
-        assert!(output.contains("States:"), "output should have States section");
-        assert!(output.contains("+ state: ready_for_triage"), "output should show added state");
-        assert!(output.contains("- state: deferred"), "output should show removed state");
+        assert!(
+            output.contains("States:"),
+            "output should have States section"
+        );
+        assert!(
+            output.contains("+ state: ready_for_triage"),
+            "output should show added state"
+        );
+        assert!(
+            output.contains("- state: deferred"),
+            "output should show removed state"
+        );
     }
 }

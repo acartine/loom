@@ -1,39 +1,32 @@
+pub mod codegen;
+pub mod compat;
+pub mod config;
+pub mod diff;
+pub mod error;
+pub mod graph;
+pub mod ir;
 pub mod parse;
 pub mod prompt;
-pub mod config;
-pub mod ir;
-pub mod graph;
-pub mod codegen;
 pub mod sim;
-pub mod diff;
-pub mod compat;
-pub mod error;
 
-use std::path::Path;
 use error::{Diagnostics, LoomError};
 use ir::WorkflowIR;
+use std::path::Path;
 
 /// Load and compile a workflow from a directory path.
 /// This is the main entry point for the library.
 pub fn load_workflow(workflow_dir: &Path) -> Result<(WorkflowIR, Diagnostics), Vec<LoomError>> {
     // Load config
     let config_path = workflow_dir.join("loom.toml");
-    let config = config::load_config(&config_path)
-        .map_err(|e| vec![e])?;
+    let config = config::load_config(&config_path).map_err(|e| vec![e])?;
 
     // Parse workflow
     let entry_path = workflow_dir.join(&config.workflow.entry);
-    let source = std::fs::read_to_string(&entry_path)
-        .map_err(|e| vec![LoomError::Io(e)])?;
-    let ast = parse::parse_workflow(&source)
-        .map_err(|e| vec![e])?;
+    let source = std::fs::read_to_string(&entry_path).map_err(|e| vec![LoomError::Io(e)])?;
+    let ast = parse::parse_workflow(&source).map_err(|e| vec![e])?;
 
     // Lower to IR with config metadata
-    ir::lower::lower_with_config(
-        &ast,
-        workflow_dir,
-        config.workflow.default_profile,
-    )
+    ir::lower::lower_with_config(&ast, workflow_dir, config.workflow.default_profile)
 }
 
 /// Load, lower, and validate a workflow. Returns the IR and all diagnostics.
@@ -46,7 +39,7 @@ pub fn validate_workflow(workflow_dir: &Path) -> Result<(WorkflowIR, Diagnostics
         if let Ok(entries) = std::fs::read_dir(&prompts_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().map_or(false, |ext| ext == "md") {
+                if path.extension().is_some_and(|ext| ext == "md") {
                     if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
                         let is_referenced = ir.states.values().any(|s| {
                             if let ir::StateDef::Action { prompt_name, .. } = s {
@@ -56,7 +49,9 @@ pub fn validate_workflow(workflow_dir: &Path) -> Result<(WorkflowIR, Diagnostics
                             }
                         });
                         if !is_referenced {
-                            diag.error(LoomError::OrphanedPrompt { name: stem.to_string() });
+                            diag.error(LoomError::OrphanedPrompt {
+                                name: stem.to_string(),
+                            });
                         }
                     }
                 }
@@ -91,8 +86,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]
@@ -107,7 +101,11 @@ mod tests {
         let result = validate_workflow(&fixture_dir());
         let (ir, diag) = result.expect("validate_workflow should succeed");
         assert_eq!(ir.name, "knots_sdlc");
-        assert!(diag.errors.is_empty(), "expected no errors, got: {:?}", diag.errors);
+        assert!(
+            diag.errors.is_empty(),
+            "expected no errors, got: {:?}",
+            diag.errors
+        );
         assert!(!diag.warnings.is_empty(), "expected warnings but got none");
     }
 }

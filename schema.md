@@ -1,6 +1,6 @@
 # Loom Language Specification
 
-**Version**: 0.1.0-draft
+**Version**: 0.1.0
 **Date**: 2026-03-16
 
 Loom is a workflow definition language and compiler. It produces typed,

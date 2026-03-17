@@ -1,4 +1,4 @@
-use crate::diff::{ChangeKind, diff_workflows};
+use crate::diff::{diff_workflows, ChangeKind};
 use crate::ir::WorkflowIR;
 use std::fmt;
 
@@ -57,11 +57,14 @@ pub fn check_compat(old: &WorkflowIR, new: &WorkflowIR) -> CompatResult {
         });
     }
 
-    let is_compatible = !changes.iter().any(|c| {
-        matches!(c.severity, Severity::Breaking | Severity::MigrationRequired)
-    });
+    let is_compatible = !changes
+        .iter()
+        .any(|c| matches!(c.severity, Severity::Breaking | Severity::MigrationRequired));
 
-    CompatResult { changes, is_compatible }
+    CompatResult {
+        changes,
+        is_compatible,
+    }
 }
 
 fn classify_change(change: &crate::diff::Change) -> Severity {
@@ -99,10 +102,16 @@ pub fn format_compat(result: &CompatResult) -> String {
     }
 
     let mut out = String::new();
-    let severities = [Severity::Safe, Severity::Breaking, Severity::MigrationRequired];
+    let severities = [
+        Severity::Safe,
+        Severity::Breaking,
+        Severity::MigrationRequired,
+    ];
 
     for severity in &severities {
-        let matching: Vec<_> = result.changes.iter()
+        let matching: Vec<_> = result
+            .changes
+            .iter()
             .filter(|c| c.severity == *severity)
             .collect();
         if matching.is_empty() {
@@ -118,16 +127,23 @@ pub fn format_compat(result: &CompatResult) -> String {
             if c.detail.is_empty() {
                 out.push_str(&format!("  {} {}: {}\n", prefix, c.category, c.name));
             } else {
-                out.push_str(&format!("  {} {}: {} ({})\n", prefix, c.category, c.name, c.detail));
+                out.push_str(&format!(
+                    "  {} {}: {} ({})\n",
+                    prefix, c.category, c.name, c.detail
+                ));
             }
         }
         out.push('\n');
     }
 
-    let breaking_count = result.changes.iter()
+    let breaking_count = result
+        .changes
+        .iter()
         .filter(|c| c.severity == Severity::Breaking)
         .count();
-    let migration_count = result.changes.iter()
+    let migration_count = result
+        .changes
+        .iter()
         .filter(|c| c.severity == Severity::MigrationRequired)
         .count();
 
@@ -172,13 +188,11 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_v1() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     fn fixture_v2() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc_v2")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc_v2")
     }
 
     #[test]
@@ -187,16 +201,20 @@ mod tests {
         let (new_ir, _) = crate::load_workflow(&fixture_v2()).unwrap();
         let result = check_compat(&old_ir, &new_ir);
 
-        let safe: Vec<_> = result.changes.iter()
+        let safe: Vec<_> = result
+            .changes
+            .iter()
             .filter(|c| c.severity == Severity::Safe)
             .collect();
         assert!(!safe.is_empty(), "expected safe changes");
         assert!(
-            safe.iter().any(|c| c.category == "state" && c.name == "ready_for_triage"),
+            safe.iter()
+                .any(|c| c.category == "state" && c.name == "ready_for_triage"),
             "expected safe addition of ready_for_triage"
         );
         assert!(
-            safe.iter().any(|c| c.category == "profile" && c.name == "triage"),
+            safe.iter()
+                .any(|c| c.category == "profile" && c.name == "triage"),
             "expected safe addition of triage profile"
         );
     }
@@ -207,7 +225,9 @@ mod tests {
         let (new_ir, _) = crate::load_workflow(&fixture_v2()).unwrap();
         let result = check_compat(&old_ir, &new_ir);
 
-        let breaking: Vec<_> = result.changes.iter()
+        let breaking: Vec<_> = result
+            .changes
+            .iter()
             .filter(|c| c.severity == Severity::Breaking)
             .collect();
         assert!(!breaking.is_empty(), "expected breaking changes");
@@ -223,7 +243,9 @@ mod tests {
         let (new_ir, _) = crate::load_workflow(&fixture_v2()).unwrap();
         let result = check_compat(&old_ir, &new_ir);
 
-        let migration: Vec<_> = result.changes.iter()
+        let migration: Vec<_> = result
+            .changes
+            .iter()
             .filter(|c| c.severity == Severity::MigrationRequired)
             .collect();
         assert!(!migration.is_empty(), "expected migration-required changes");

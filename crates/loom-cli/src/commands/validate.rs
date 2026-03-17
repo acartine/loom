@@ -12,10 +12,7 @@ pub fn run(dir: &Path) -> miette::Result<()> {
                 for err in &diag.errors {
                     eprintln!("error: {}", err);
                 }
-                Err(miette::miette!(
-                    "{} error(s) found",
-                    diag.errors.len()
-                ))
+                Err(miette::miette!("{} error(s) found", diag.errors.len()))
             } else {
                 eprintln!(
                     "ok: {} v{} ({} states, {} steps, {} phases, {} profiles)",

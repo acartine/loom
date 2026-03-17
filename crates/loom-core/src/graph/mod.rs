@@ -1,6 +1,6 @@
-pub mod validate;
 pub mod profile;
 pub mod render;
+pub mod validate;
 
 use indexmap::IndexMap;
 use petgraph::graph::{DiGraph, NodeIndex};
@@ -46,17 +46,31 @@ pub fn build_graph(ir: &WorkflowIR) -> WorkflowGraph {
 
     // Add step transitions (queue -> action)
     for step in ir.steps.values() {
-        if let (Some(&q_idx), Some(&a_idx)) = (node_indices.get(&step.queue), node_indices.get(&step.action)) {
-            graph.add_edge(q_idx, a_idx, EdgeKind::Claim { step: step.name.clone() });
+        if let (Some(&q_idx), Some(&a_idx)) = (
+            node_indices.get(&step.queue),
+            node_indices.get(&step.action),
+        ) {
+            graph.add_edge(
+                q_idx,
+                a_idx,
+                EdgeKind::Claim {
+                    step: step.name.clone(),
+                },
+            );
         }
     }
 
     // Add outcome edges from prompts
     for (prompt_name, prompt) in &ir.prompts {
         // Find the action that uses this prompt
-        let action_name = ir.states.values()
+        let action_name = ir
+            .states
+            .values()
             .find(|s| {
-                if let crate::ir::StateDef::Action { prompt_name: pn, .. } = s {
+                if let crate::ir::StateDef::Action {
+                    prompt_name: pn, ..
+                } = s
+                {
                     pn == prompt_name
                 } else {
                     false
@@ -68,18 +82,26 @@ pub fn build_graph(ir: &WorkflowIR) -> WorkflowGraph {
             if let Some(&action_idx) = node_indices.get(&action_name) {
                 for (outcome, target) in &prompt.success {
                     if let Some(&target_idx) = node_indices.get(target) {
-                        graph.add_edge(action_idx, target_idx, EdgeKind::Outcome {
-                            outcome: outcome.clone(),
-                            is_success: true,
-                        });
+                        graph.add_edge(
+                            action_idx,
+                            target_idx,
+                            EdgeKind::Outcome {
+                                outcome: outcome.clone(),
+                                is_success: true,
+                            },
+                        );
                     }
                 }
                 for (outcome, target) in &prompt.failure {
                     if let Some(&target_idx) = node_indices.get(target) {
-                        graph.add_edge(action_idx, target_idx, EdgeKind::Outcome {
-                            outcome: outcome.clone(),
-                            is_success: false,
-                        });
+                        graph.add_edge(
+                            action_idx,
+                            target_idx,
+                            EdgeKind::Outcome {
+                                outcome: outcome.clone(),
+                                is_success: false,
+                            },
+                        );
                     }
                 }
             }
@@ -108,7 +130,10 @@ pub fn build_graph(ir: &WorkflowIR) -> WorkflowGraph {
         }
     }
 
-    WorkflowGraph { graph, node_indices }
+    WorkflowGraph {
+        graph,
+        node_indices,
+    }
 }
 
 #[cfg(test)]
@@ -119,8 +144,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]

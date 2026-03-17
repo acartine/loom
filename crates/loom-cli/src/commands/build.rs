@@ -1,6 +1,6 @@
-use std::path::Path;
-use loom_core::codegen::{self, CodegenTarget};
 use loom_core::codegen::toml_emit;
+use loom_core::codegen::{self, CodegenTarget};
+use std::path::Path;
 
 #[derive(Debug, Clone, Copy)]
 pub enum EmitFormat {
@@ -12,11 +12,10 @@ pub enum EmitFormat {
 
 pub fn run(dir: &Path, format: EmitFormat) -> miette::Result<()> {
     // Build runs full validation — loom is a validating compiler
-    let (ir, diag) = loom_core::validate_workflow(dir)
-        .map_err(|errors| {
-            let msgs: Vec<String> = errors.iter().map(|e| e.to_string()).collect();
-            miette::miette!("failed to load workflow:\n{}", msgs.join("\n"))
-        })?;
+    let (ir, diag) = loom_core::validate_workflow(dir).map_err(|errors| {
+        let msgs: Vec<String> = errors.iter().map(|e| e.to_string()).collect();
+        miette::miette!("failed to load workflow:\n{}", msgs.join("\n"))
+    })?;
 
     // Print warnings
     for warning in &diag.warnings {
@@ -35,12 +34,15 @@ pub fn run(dir: &Path, format: EmitFormat) -> miette::Result<()> {
     }
 
     let output = match format {
-        EmitFormat::Rust => codegen::generate(&ir, CodegenTarget::Rust)
-            .map_err(|e| miette::miette!("{}", e))?,
-        EmitFormat::Go => codegen::generate(&ir, CodegenTarget::Go)
-            .map_err(|e| miette::miette!("{}", e))?,
-        EmitFormat::Python => codegen::generate(&ir, CodegenTarget::Python)
-            .map_err(|e| miette::miette!("{}", e))?,
+        EmitFormat::Rust => {
+            codegen::generate(&ir, CodegenTarget::Rust).map_err(|e| miette::miette!("{}", e))?
+        }
+        EmitFormat::Go => {
+            codegen::generate(&ir, CodegenTarget::Go).map_err(|e| miette::miette!("{}", e))?
+        }
+        EmitFormat::Python => {
+            codegen::generate(&ir, CodegenTarget::Python).map_err(|e| miette::miette!("{}", e))?
+        }
         EmitFormat::Toml => toml_emit::emit_toml(&ir),
     };
 

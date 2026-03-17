@@ -1,10 +1,10 @@
-use std::collections::HashSet;
 use petgraph::algo::has_path_connecting;
 use petgraph::Direction;
+use std::collections::HashSet;
 
+use super::{build_graph, WorkflowGraph};
 use crate::error::{Diagnostics, LoomError, LoomWarning};
 use crate::ir::{StateDef, WorkflowIR};
-use super::{WorkflowGraph, build_graph};
 
 /// Run all validation checks on the workflow
 pub fn validate(ir: &WorkflowIR) -> Diagnostics {
@@ -58,7 +58,11 @@ fn check_dead_states(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut Diagnost
     }
 
     for (name, _state) in &ir.states {
-        if ir.states.get(name).map_or(false, |s| s.is_terminal() || s.is_escape()) {
+        if ir
+            .states
+            .get(name)
+            .is_some_and(|s| s.is_terminal() || s.is_escape())
+        {
             continue;
         }
         if entry_states.contains(name) {
@@ -76,7 +80,9 @@ fn check_dead_states(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut Diagnost
 
 /// Check that every non-terminal state can reach at least one terminal state
 fn check_terminal_reachability(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut Diagnostics) {
-    let terminal_indices: Vec<_> = ir.states.iter()
+    let terminal_indices: Vec<_> = ir
+        .states
+        .iter()
         .filter(|(_, s)| s.is_terminal())
         .filter_map(|(name, _)| graph.node_indices.get(name).copied())
         .collect();
@@ -91,7 +97,8 @@ fn check_terminal_reachability(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mu
         }
 
         if let Some(&idx) = graph.node_indices.get(name) {
-            let can_reach_terminal = terminal_indices.iter()
+            let can_reach_terminal = terminal_indices
+                .iter()
                 .any(|&t_idx| has_path_connecting(&graph.graph, idx, t_idx, None));
 
             if !can_reach_terminal {
@@ -130,7 +137,9 @@ fn check_escape_reachability(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut 
 /// Generate warnings
 fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
     // Unused states: states not in any step
-    let step_states: HashSet<String> = ir.steps.values()
+    let step_states: HashSet<String> = ir
+        .steps
+        .values()
         .flat_map(|s| vec![s.queue.clone(), s.action.clone()])
         .collect();
 
@@ -144,7 +153,9 @@ fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
     }
 
     // Unused steps: steps not in any phase
-    let phase_steps: HashSet<String> = ir.phases.values()
+    let phase_steps: HashSet<String> = ir
+        .phases
+        .values()
         .flat_map(|p| vec![p.produce_step.clone(), p.gate_step.clone()])
         .collect();
 
@@ -159,8 +170,17 @@ fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
         if prompt.success.len() == 1 && prompt.failure.is_empty() {
             // Find the action name for this prompt
             if let Some(action_name) = ir.states.values().find_map(|s| {
-                if let StateDef::Action { name, prompt_name: pn, .. } = s {
-                    if pn == prompt_name { Some(name.clone()) } else { None }
+                if let StateDef::Action {
+                    name,
+                    prompt_name: pn,
+                    ..
+                } = s
+                {
+                    if pn == prompt_name {
+                        Some(name.clone())
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
@@ -177,8 +197,17 @@ fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
             if targets.len() == 1 {
                 let target = targets.into_iter().next().unwrap();
                 if let Some(action_name) = ir.states.values().find_map(|s| {
-                    if let StateDef::Action { name, prompt_name: pn, .. } = s {
-                        if pn == prompt_name { Some(name.clone()) } else { None }
+                    if let StateDef::Action {
+                        name,
+                        prompt_name: pn,
+                        ..
+                    } = s
+                    {
+                        if pn == prompt_name {
+                            Some(name.clone())
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
@@ -201,14 +230,13 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
-    use indexmap::IndexMap;
     use crate::ir::{PhaseDef, ProfileDef, StepDef};
-    use crate::prompt::PromptFile;
     use crate::parse::ast::{ActionType, Executor};
+    use crate::prompt::PromptFile;
+    use indexmap::IndexMap;
 
     /// Regression test: a produce action with no success outcomes must be
     /// rejected at validation time. Without this check the graph and codegen
@@ -217,67 +245,118 @@ mod tests {
     #[test]
     fn test_produce_no_success_is_error() {
         let mut states = IndexMap::new();
-        states.insert("q1".into(), StateDef::Queue {
-            name: "q1".into(), display_name: "Q1".into(),
-        });
-        states.insert("a1".into(), StateDef::Action {
-            name: "a1".into(),
-            display_name: "A1".into(),
-            action_type: ActionType::Produce(Executor::Agent),
-            prompt_name: "a1_prompt".into(),
-            constraints: vec![],
-            executor: Executor::Agent,
-        });
-        states.insert("q2".into(), StateDef::Queue {
-            name: "q2".into(), display_name: "Q2".into(),
-        });
-        states.insert("a2".into(), StateDef::Action {
-            name: "a2".into(),
-            display_name: "A2".into(),
-            action_type: ActionType::Gate(crate::parse::ast::GateKind::Approve, Executor::Human),
-            prompt_name: "a2_prompt".into(),
-            constraints: vec![],
-            executor: Executor::Human,
-        });
-        states.insert("done".into(), StateDef::Terminal {
-            name: "done".into(), display_name: "Done".into(),
-        });
+        states.insert(
+            "q1".into(),
+            StateDef::Queue {
+                name: "q1".into(),
+                display_name: "Q1".into(),
+            },
+        );
+        states.insert(
+            "a1".into(),
+            StateDef::Action {
+                name: "a1".into(),
+                display_name: "A1".into(),
+                action_type: ActionType::Produce(Executor::Agent),
+                prompt_name: "a1_prompt".into(),
+                constraints: vec![],
+                executor: Executor::Agent,
+            },
+        );
+        states.insert(
+            "q2".into(),
+            StateDef::Queue {
+                name: "q2".into(),
+                display_name: "Q2".into(),
+            },
+        );
+        states.insert(
+            "a2".into(),
+            StateDef::Action {
+                name: "a2".into(),
+                display_name: "A2".into(),
+                action_type: ActionType::Gate(
+                    crate::parse::ast::GateKind::Approve,
+                    Executor::Human,
+                ),
+                prompt_name: "a2_prompt".into(),
+                constraints: vec![],
+                executor: Executor::Human,
+            },
+        );
+        states.insert(
+            "done".into(),
+            StateDef::Terminal {
+                name: "done".into(),
+                display_name: "Done".into(),
+            },
+        );
 
         let mut steps = IndexMap::new();
-        steps.insert("s1".into(), StepDef { name: "s1".into(), queue: "q1".into(), action: "a1".into() });
-        steps.insert("s2".into(), StepDef { name: "s2".into(), queue: "q2".into(), action: "a2".into() });
+        steps.insert(
+            "s1".into(),
+            StepDef {
+                name: "s1".into(),
+                queue: "q1".into(),
+                action: "a1".into(),
+            },
+        );
+        steps.insert(
+            "s2".into(),
+            StepDef {
+                name: "s2".into(),
+                queue: "q2".into(),
+                action: "a2".into(),
+            },
+        );
 
         let mut phases = IndexMap::new();
-        phases.insert("p1".into(), PhaseDef { name: "p1".into(), produce_step: "s1".into(), gate_step: "s2".into() });
+        phases.insert(
+            "p1".into(),
+            PhaseDef {
+                name: "p1".into(),
+                produce_step: "s1".into(),
+                gate_step: "s2".into(),
+            },
+        );
 
         let mut profiles = IndexMap::new();
-        profiles.insert("default".into(), ProfileDef {
-            name: "default".into(),
-            display_name: None,
-            description: None,
-            phases: vec!["p1".into()],
-            output: None,
-            overrides: IndexMap::new(),
-        });
+        profiles.insert(
+            "default".into(),
+            ProfileDef {
+                name: "default".into(),
+                display_name: None,
+                description: None,
+                phases: vec!["p1".into()],
+                output: None,
+                overrides: IndexMap::new(),
+            },
+        );
 
         let mut prompts = IndexMap::new();
         // Produce prompt with NO success outcomes — this is the bug trigger
-        prompts.insert("a1_prompt".into(), PromptFile {
-            accept: vec![],
-            success: IndexMap::new(),
-            failure: IndexMap::from([("fail".into(), "q1".into())]),
-            params: IndexMap::new(),
-            body: String::new(),
-            body_params: vec![],
-        });
-        prompts.insert("a2_prompt".into(), PromptFile {
-            accept: vec![],
-            success: IndexMap::from([("approved".into(), "done".into())]),
-            failure: IndexMap::from([("rejected".into(), "q1".into())]),
-            params: IndexMap::new(),
-            body: String::new(),
-            body_params: vec![],
-        });
+        prompts.insert(
+            "a1_prompt".into(),
+            PromptFile {
+                accept: vec![],
+                success: IndexMap::new(),
+                failure: IndexMap::from([("fail".into(), "q1".into())]),
+                params: IndexMap::new(),
+                body: String::new(),
+                body_params: vec![],
+            },
+        );
+        prompts.insert(
+            "a2_prompt".into(),
+            PromptFile {
+                accept: vec![],
+                success: IndexMap::from([("approved".into(), "done".into())]),
+                failure: IndexMap::from([("rejected".into(), "q1".into())]),
+                params: IndexMap::new(),
+                body: String::new(),
+                body_params: vec![],
+            },
+        );
 
         let ir = WorkflowIR {
             name: "test".into(),
@@ -292,11 +371,15 @@ mod tests {
         };
 
         let diag = validate(&ir);
-        let has_produce_no_success = diag.errors.iter().any(|e| {
-            matches!(e, LoomError::ProduceNoSuccess { action } if action == "a1")
-        });
-        assert!(has_produce_no_success,
-            "expected ProduceNoSuccess error for 'a1', got errors: {:?}", diag.errors);
+        let has_produce_no_success = diag
+            .errors
+            .iter()
+            .any(|e| matches!(e, LoomError::ProduceNoSuccess { action } if action == "a1"));
+        assert!(
+            has_produce_no_success,
+            "expected ProduceNoSuccess error for 'a1', got errors: {:?}",
+            diag.errors
+        );
     }
 
     #[test]
@@ -314,6 +397,10 @@ mod tests {
             eprintln!("WARN: {}", warn);
         }
 
-        assert!(!diag.has_errors(), "knots_sdlc should validate clean, got {} errors", diag.errors.len());
+        assert!(
+            !diag.has_errors(),
+            "knots_sdlc should validate clean, got {} errors",
+            diag.errors.len()
+        );
     }
 }

@@ -33,21 +33,30 @@ pub struct SimState {
 /// of the given profile (or the first phase in the IR if no profile).
 pub fn new(ir: &WorkflowIR, profile: Option<&str>) -> Result<SimState, String> {
     let first_phase_name = if let Some(pname) = profile {
-        let prof = ir.profiles.get(pname)
+        let prof = ir
+            .profiles
+            .get(pname)
             .ok_or_else(|| format!("profile '{}' not found", pname))?;
-        prof.phases.first()
+        prof.phases
+            .first()
             .ok_or_else(|| format!("profile '{}' has no phases", pname))?
             .clone()
     } else {
-        ir.phases.keys().next()
+        ir.phases
+            .keys()
+            .next()
             .ok_or_else(|| "workflow has no phases".to_string())?
             .clone()
     };
 
-    let phase = ir.phases.get(&first_phase_name)
+    let phase = ir
+        .phases
+        .get(&first_phase_name)
         .ok_or_else(|| format!("phase '{}' not found", first_phase_name))?;
 
-    let step = ir.steps.get(&phase.produce_step)
+    let step = ir
+        .steps
+        .get(&phase.produce_step)
         .ok_or_else(|| format!("step '{}' not found", phase.produce_step))?;
 
     Ok(SimState {
@@ -75,7 +84,10 @@ pub fn available_transitions(state: &SimState, ir: &WorkflowIR) -> Vec<SimTransi
                 format!("claim ({}) -> {}", step, target_name),
                 TransitionKind::Claim { step: step.clone() },
             ),
-            EdgeKind::Outcome { outcome, is_success } => {
+            EdgeKind::Outcome {
+                outcome,
+                is_success,
+            } => {
                 let tag = if *is_success { "ok" } else { "fail" };
                 (
                     format!("[{}] {} -> {}", tag, outcome, target_name),
@@ -87,12 +99,11 @@ pub fn available_transitions(state: &SimState, ir: &WorkflowIR) -> Vec<SimTransi
             }
             EdgeKind::PhaseLink { phase } => (
                 format!("phase link ({}) -> {}", phase, target_name),
-                TransitionKind::Claim { step: phase.clone() },
+                TransitionKind::Claim {
+                    step: phase.clone(),
+                },
             ),
-            EdgeKind::Wildcard => (
-                format!("[*] -> {}", target_name),
-                TransitionKind::Wildcard,
-            ),
+            EdgeKind::Wildcard => (format!("[*] -> {}", target_name), TransitionKind::Wildcard),
         };
 
         transitions.push(SimTransition {
@@ -106,8 +117,12 @@ pub fn available_transitions(state: &SimState, ir: &WorkflowIR) -> Vec<SimTransi
     // Sort: claims first, then outcomes, then wildcards
     transitions.sort_by_key(|t| match &t.kind {
         TransitionKind::Claim { .. } => 0,
-        TransitionKind::Outcome { is_success: true, .. } => 1,
-        TransitionKind::Outcome { is_success: false, .. } => 2,
+        TransitionKind::Outcome {
+            is_success: true, ..
+        } => 1,
+        TransitionKind::Outcome {
+            is_success: false, ..
+        } => 2,
         TransitionKind::Wildcard => 3,
     });
 
@@ -137,8 +152,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     fn load_ir() -> WorkflowIR {
@@ -178,10 +192,14 @@ mod tests {
         let transitions = available_transitions(&state, &ir);
 
         // From a queue, we should have claim edges + wildcard edges
-        let claims: Vec<_> = transitions.iter()
+        let claims: Vec<_> = transitions
+            .iter()
             .filter(|t| matches!(&t.kind, TransitionKind::Claim { .. }))
             .collect();
-        assert!(!claims.is_empty(), "expected at least one claim transition from queue");
+        assert!(
+            !claims.is_empty(),
+            "expected at least one claim transition from queue"
+        );
         assert_eq!(claims[0].to, "planning");
     }
 
@@ -194,15 +212,23 @@ mod tests {
         };
         let transitions = available_transitions(&state, &ir);
 
-        let outcomes: Vec<_> = transitions.iter()
+        let outcomes: Vec<_> = transitions
+            .iter()
             .filter(|t| matches!(&t.kind, TransitionKind::Outcome { .. }))
             .collect();
-        let wildcards: Vec<_> = transitions.iter()
+        let wildcards: Vec<_> = transitions
+            .iter()
             .filter(|t| matches!(&t.kind, TransitionKind::Wildcard))
             .collect();
 
-        assert!(!outcomes.is_empty(), "expected outcome transitions from action");
-        assert!(!wildcards.is_empty(), "expected wildcard transitions from action");
+        assert!(
+            !outcomes.is_empty(),
+            "expected outcome transitions from action"
+        );
+        assert!(
+            !wildcards.is_empty(),
+            "expected wildcard transitions from action"
+        );
     }
 
     #[test]
@@ -211,7 +237,8 @@ mod tests {
         let mut state = new(&ir, None).unwrap();
         let transitions = available_transitions(&state, &ir);
 
-        let claim = transitions.iter()
+        let claim = transitions
+            .iter()
             .find(|t| matches!(&t.kind, TransitionKind::Claim { .. }))
             .expect("should have a claim transition");
 

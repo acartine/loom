@@ -4,40 +4,25 @@ use thiserror::Error;
 #[derive(Debug, Error, Diagnostic)]
 pub enum LoomError {
     #[error("Parse error: {message}")]
-    Parse {
-        message: String,
-    },
+    Parse { message: String },
 
     #[error("Duplicate identifier: '{name}' already declared")]
-    DuplicateIdentifier {
-        name: String,
-    },
+    DuplicateIdentifier { name: String },
 
     #[error("Unresolved reference: '{name}' not found")]
-    UnresolvedReference {
-        name: String,
-        context: String,
-    },
+    UnresolvedReference { name: String, context: String },
 
     #[error("Step type mismatch: {message}")]
-    StepTypeMismatch {
-        message: String,
-    },
+    StepTypeMismatch { message: String },
 
     #[error("Phase type mismatch: {message}")]
-    PhaseTypeMismatch {
-        message: String,
-    },
+    PhaseTypeMismatch { message: String },
 
     #[error("Missing prompt file: prompts/{name}.md")]
-    MissingPrompt {
-        name: String,
-    },
+    MissingPrompt { name: String },
 
     #[error("Orphaned prompt file: prompts/{name}.md has no matching action")]
-    OrphanedPrompt {
-        name: String,
-    },
+    OrphanedPrompt { name: String },
 
     #[error("Invalid outcome target: outcome '{outcome}' in prompt '{prompt}' targets unknown state '{target}'")]
     InvalidOutcomeTarget {
@@ -47,10 +32,7 @@ pub enum LoomError {
     },
 
     #[error("Parameter consistency: prompt '{prompt}' uses '{{{{ {param} }}}}' but it is not declared in params")]
-    UndeclaredParam {
-        prompt: String,
-        param: String,
-    },
+    UndeclaredParam { prompt: String, param: String },
 
     #[error("Parameter validation: {message}")]
     ParamValidation {
@@ -60,45 +42,28 @@ pub enum LoomError {
     },
 
     #[error("Dead state: '{name}' has no inbound transitions")]
-    DeadState {
-        name: String,
-    },
+    DeadState { name: String },
 
     #[error("Terminal unreachable: '{name}' cannot reach any terminal state")]
-    TerminalUnreachable {
-        name: String,
-    },
+    TerminalUnreachable { name: String },
 
     #[error("Profile error: {message}")]
-    ProfileError {
-        message: String,
-    },
+    ProfileError { message: String },
 
     #[error("Profile validation: profile '{profile}': {message}")]
-    ProfileValidation {
-        profile: String,
-        message: String,
-    },
+    ProfileValidation { profile: String, message: String },
 
     #[error("Override validity: override references action '{action}' not in profile's phases")]
-    InvalidOverride {
-        action: String,
-    },
+    InvalidOverride { action: String },
 
     #[error("Produce action '{action}' has no success outcomes; produce actions must declare at least one success outcome to advance the workflow")]
-    ProduceNoSuccess {
-        action: String,
-    },
+    ProduceNoSuccess { action: String },
 
     #[error("Escape reachability: escape state '{name}' has no path back to the workflow")]
-    EscapeUnreachable {
-        name: String,
-    },
+    EscapeUnreachable { name: String },
 
     #[error("Config: default_profile '{name}' is not defined in the workflow")]
-    InvalidDefaultProfile {
-        name: String,
-    },
+    InvalidDefaultProfile { name: String },
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -110,9 +75,7 @@ pub enum LoomError {
     Toml(String),
 
     #[error("Config error: {message}")]
-    Config {
-        message: String,
-    },
+    Config { message: String },
 }
 
 #[derive(Debug)]
@@ -128,19 +91,31 @@ impl std::fmt::Display for LoomWarning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LoomWarning::UnusedState { name } => {
-                write!(f, "warning: state '{name}' is declared but not used in any step")
+                write!(
+                    f,
+                    "warning: state '{name}' is declared but not used in any step"
+                )
             }
             LoomWarning::UnusedStep { name } => {
-                write!(f, "warning: step '{name}' is declared but not used in any phase")
+                write!(
+                    f,
+                    "warning: step '{name}' is declared but not used in any phase"
+                )
             }
             LoomWarning::SingleOutcomeAction { name } => {
                 write!(f, "warning: action '{name}' has only one success outcome and zero failure outcomes")
             }
             LoomWarning::SymmetricFailureRouting { name, target } => {
-                write!(f, "warning: all failure outcomes for '{name}' route to '{target}'")
+                write!(
+                    f,
+                    "warning: all failure outcomes for '{name}' route to '{target}'"
+                )
             }
             LoomWarning::EscapeNoReentry { name } => {
-                write!(f, "warning: escape state '{name}' has no explicit re-entry transition")
+                write!(
+                    f,
+                    "warning: escape state '{name}' has no explicit re-entry transition"
+                )
             }
         }
     }

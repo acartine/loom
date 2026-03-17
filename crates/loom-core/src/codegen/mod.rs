@@ -3,8 +3,8 @@ pub mod python;
 pub mod rust;
 pub mod toml_emit;
 
-use crate::ir::WorkflowIR;
 use crate::error::LoomResult;
+use crate::ir::WorkflowIR;
 
 /// Target language for code generation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,16 +29,17 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]
     fn test_generate_rust_target() {
-        let (ir, _diag) = crate::load_workflow(&fixture_dir())
-            .expect("load_workflow should succeed");
-        let output = generate(&ir, CodegenTarget::Rust)
-            .expect("generate should succeed");
-        assert!(output.contains("pub enum State"), "expected 'pub enum State' in output");
+        let (ir, _diag) =
+            crate::load_workflow(&fixture_dir()).expect("load_workflow should succeed");
+        let output = generate(&ir, CodegenTarget::Rust).expect("generate should succeed");
+        assert!(
+            output.contains("pub enum State"),
+            "expected 'pub enum State' in output"
+        );
     }
 }

@@ -1,8 +1,8 @@
 pub mod lower;
 
-use indexmap::IndexMap;
 use crate::parse::ast::{ActionType, Constraint, Executor, GateKind, OutputKind};
 use crate::prompt::PromptFile;
+use indexmap::IndexMap;
 
 /// The intermediate representation of a complete workflow.
 /// All names are resolved, all includes are loaded, all prompts are parsed.
@@ -94,17 +94,32 @@ impl StateDef {
 
     pub fn gate_kind(&self) -> Option<GateKind> {
         match self {
-            StateDef::Action { action_type: ActionType::Gate(kind, _), .. } => Some(*kind),
+            StateDef::Action {
+                action_type: ActionType::Gate(kind, _),
+                ..
+            } => Some(*kind),
             _ => None,
         }
     }
 
     pub fn is_produce(&self) -> bool {
-        matches!(self, StateDef::Action { action_type: ActionType::Produce(_), .. })
+        matches!(
+            self,
+            StateDef::Action {
+                action_type: ActionType::Produce(_),
+                ..
+            }
+        )
     }
 
     pub fn is_gate(&self) -> bool {
-        matches!(self, StateDef::Action { action_type: ActionType::Gate(..), .. })
+        matches!(
+            self,
+            StateDef::Action {
+                action_type: ActionType::Gate(..),
+                ..
+            }
+        )
     }
 }
 

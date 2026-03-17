@@ -87,12 +87,7 @@ fn test_build_toml() {
 #[test]
 fn test_graph_mermaid() {
     let output = Command::new(loom_bin())
-        .args([
-            "graph",
-            "tests/fixtures/knots_sdlc",
-            "--format",
-            "mermaid",
-        ])
+        .args(["graph", "tests/fixtures/knots_sdlc", "--format", "mermaid"])
         .current_dir(workspace_root())
         .output()
         .expect("failed to execute loom");
@@ -191,6 +186,51 @@ fn test_init_and_validate() {
         "validate on init'd dir should succeed, stderr: {}",
         String::from_utf8_lossy(&validate_output.stderr)
     );
+    assert!(
+        !String::from_utf8_lossy(&validate_output.stderr).contains("warning:"),
+        "validate on init'd dir should be warning-free, stderr: {}",
+        String::from_utf8_lossy(&validate_output.stderr)
+    );
+}
+
+#[test]
+fn test_init_with_path_and_validate() {
+    let parent = std::env::temp_dir().join("loom_test_init_path_parent");
+    let workflow_dir = parent.join("nested").join("test-workflow");
+
+    let _ = std::fs::remove_dir_all(&parent);
+    std::fs::create_dir_all(parent.join("nested")).expect("failed to create temp parent dir");
+
+    let init_output = Command::new(loom_bin())
+        .args(["init", workflow_dir.to_str().unwrap()])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom init");
+
+    assert!(
+        init_output.status.success(),
+        "init with path should succeed, stderr: {}",
+        String::from_utf8_lossy(&init_output.stderr)
+    );
+
+    let validate_output = Command::new(loom_bin())
+        .args(["validate", workflow_dir.to_str().unwrap()])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom validate");
+
+    let _ = std::fs::remove_dir_all(&parent);
+
+    assert!(
+        validate_output.status.success(),
+        "validate on path init'd dir should succeed, stderr: {}",
+        String::from_utf8_lossy(&validate_output.stderr)
+    );
+    assert!(
+        !String::from_utf8_lossy(&validate_output.stderr).contains("warning:"),
+        "validate on path init'd dir should be warning-free, stderr: {}",
+        String::from_utf8_lossy(&validate_output.stderr)
+    );
 }
 
 #[test]
@@ -243,10 +283,7 @@ fn test_build_unsupported_lang() {
         .output()
         .expect("failed to execute loom");
 
-    assert!(
-        !output.status.success(),
-        "build --lang java should fail"
-    );
+    assert!(!output.status.success(), "build --lang java should fail");
 }
 
 #[test]
@@ -273,7 +310,11 @@ fn test_graph_ascii() {
 #[test]
 fn test_diff() {
     let output = Command::new(loom_bin())
-        .args(["diff", "tests/fixtures/knots_sdlc", "tests/fixtures/knots_sdlc_v2"])
+        .args([
+            "diff",
+            "tests/fixtures/knots_sdlc",
+            "tests/fixtures/knots_sdlc_v2",
+        ])
         .current_dir(workspace_root())
         .output()
         .expect("failed to execute loom");
@@ -294,7 +335,11 @@ fn test_diff() {
 #[test]
 fn test_check_compat() {
     let output = Command::new(loom_bin())
-        .args(["check-compat", "tests/fixtures/knots_sdlc", "tests/fixtures/knots_sdlc_v2"])
+        .args([
+            "check-compat",
+            "tests/fixtures/knots_sdlc",
+            "tests/fixtures/knots_sdlc_v2",
+        ])
         .current_dir(workspace_root())
         .output()
         .expect("failed to execute loom");

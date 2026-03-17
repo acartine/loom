@@ -1,7 +1,7 @@
 mod commands;
 
-use std::path::PathBuf;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "loom", version, about = "Loom workflow compiler")]
@@ -87,12 +87,8 @@ fn main() -> miette::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Init { name } => {
-            commands::init::run(&name)
-        }
-        Commands::Validate { dir } => {
-            commands::validate::run(&dir)
-        }
+        Commands::Init { name } => commands::init::run(&name),
+        Commands::Validate { dir } => commands::validate::run(&dir),
         Commands::Build { dir, lang, emit } => {
             let format = if let Some(emit) = &emit {
                 match emit.as_str() {
@@ -104,28 +100,40 @@ fn main() -> miette::Result<()> {
                     "rust" => commands::build::EmitFormat::Rust,
                     "go" => commands::build::EmitFormat::Go,
                     "python" => commands::build::EmitFormat::Python,
-                    _ => return Err(miette::miette!("unsupported language: {} (supported: rust, go, python)", lang)),
+                    _ => {
+                        return Err(miette::miette!(
+                            "unsupported language: {} (supported: rust, go, python)",
+                            lang
+                        ))
+                    }
                 }
             };
             commands::build::run(&dir, format)
         }
-        Commands::Graph { dir, profile, format } => {
+        Commands::Graph {
+            dir,
+            profile,
+            format,
+        } => {
             let fmt = match format.as_str() {
                 "mermaid" => loom_core::graph::render::RenderFormat::Mermaid,
                 "dot" => loom_core::graph::render::RenderFormat::Dot,
                 "ascii" => loom_core::graph::render::RenderFormat::Ascii,
-                _ => return Err(miette::miette!("unsupported format: {} (supported: mermaid, dot, ascii)", format)),
+                _ => {
+                    return Err(miette::miette!(
+                        "unsupported format: {} (supported: mermaid, dot, ascii)",
+                        format
+                    ))
+                }
             };
             commands::graph::run(&dir, profile.as_deref(), fmt)
         }
-        Commands::Sim { dir, profile } => {
-            commands::sim::run(&dir, profile.as_deref())
-        }
-        Commands::Diff { old_dir, new_dir } => {
-            commands::diff::run(&old_dir, &new_dir)
-        }
-        Commands::CheckCompat { old_dir, new_dir, emit_map } => {
-            commands::compat::run(&old_dir, &new_dir, emit_map)
-        }
+        Commands::Sim { dir, profile } => commands::sim::run(&dir, profile.as_deref()),
+        Commands::Diff { old_dir, new_dir } => commands::diff::run(&old_dir, &new_dir),
+        Commands::CheckCompat {
+            old_dir,
+            new_dir,
+            emit_map,
+        } => commands::compat::run(&old_dir, &new_dir, emit_map),
     }
 }

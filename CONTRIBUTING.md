@@ -2,137 +2,155 @@
 
 ## Prerequisites
 
-- Rust stable (1.75+)
-- `cargo` (comes with Rust)
+- Rust stable 1.75+
+- `cargo`
+- Optional: Go 1.21+ and Python 3.10+ if you want to sanity-check generated code in those targets
 
-Optional, for testing codegen output:
-- Go 1.21+ (for `go vet` on generated Go code)
-- Python 3.10+ (for `py_compile` on generated Python code)
-
-## Getting started
+## Development Setup
 
 ```bash
 git clone https://github.com/acartine/loom.git
 cd loom
 cargo build
 cargo test
+cargo run -p loom-cli -- validate tests/fixtures/knots_sdlc
 ```
 
-## Project layout
-
-```
-loom/
-  Cargo.toml                    # workspace root
-  schema.md                     # language specification (source of truth)
-  crates/
-    loom-core/                  # library crate
-      src/
-        lib.rs                  # load_workflow(), validate_workflow()
-        grammar.pest            # PEG grammar (must match schema.md section 2)
-        error.rs                # LoomError, LoomWarning, Diagnostics
-        config.rs               # loom.toml parsing
-        parse/
-          mod.rs                # pest -> AST
-          ast.rs                # raw AST types
-        prompt/
-          mod.rs                # YAML frontmatter + {{ param }} extraction
-        ir/
-          mod.rs                # WorkflowIR, StateDef, StepDef, etc.
-          lower.rs              # AST -> IR (two-phase name resolution)
-        graph/
-          mod.rs                # petgraph construction
-          validate.rs           # error checks + warning checks
-          profile.rs            # profile subgraph extraction
-          render.rs             # mermaid + DOT output
-        codegen/
-          mod.rs                # CodegenTarget dispatch
-          rust.rs               # Rust code generation
-          toml_emit.rs          # TOML interchange format
-    loom-cli/                   # binary crate
-      src/
-        main.rs                 # clap CLI entrypoint
-        commands/
-          init.rs               # loom init
-          validate.rs           # loom validate
-          build.rs              # loom build
-          graph.rs              # loom graph
-  tests/
-    fixtures/
-      knots_sdlc/              # reference workflow from schema.md section 7
-```
-
-## Compiler pipeline
-
-The compiler has a strict phase order. Each phase consumes the output of the previous one:
-
-1. **Parse** — PEG grammar (`grammar.pest`) produces pest pairs, converted to AST types (`parse/ast.rs`)
-2. **Lower** — AST is lowered to IR (`ir/lower.rs`). This is a two-phase process: first register all declarations, then resolve all references. Prompts are loaded from disk during lowering.
-3. **Graph** — IR is converted to a petgraph (`graph/mod.rs`). Implicit transitions (step claims, phase links, wildcards) are materialized as edges.
-4. **Validate** — The graph is checked for errors (`graph/validate.rs`). Validation runs on the full workflow and on each profile's subgraph independently.
-5. **Codegen** — IR is emitted as Rust code or TOML (`codegen/`).
-
-The IR is the hub. AST is discarded after lowering. All downstream operations work from `WorkflowIR`.
-
-## Key design decisions
-
-- **Error accumulation**: The compiler collects all errors before reporting. It does not bail on the first error. This is handled by the `Diagnostics` struct in `error.rs`.
-- **Two-phase name resolution**: Register all names first, then resolve references. This handles forward declarations cleanly.
-- **Wildcard expansion**: `* -> target` expands to N concrete edges during graph construction.
-- **Profile subgraph as filtered view**: `graph::profile::extract_profile_subgraph` filters the full graph rather than building separate IRs.
-- **Validation gates codegen**: `loom build` runs the full validation pipeline. It refuses to emit artifacts for invalid workflows.
-
-## Running tests
+If you change the CLI, language semantics, or generated output, also run:
 
 ```bash
-# All tests
-cargo test
-
-# Specific module
-cargo test --lib parse
-cargo test --lib ir::lower
-cargo test --lib graph::validate
-cargo test --lib codegen::rust
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
 ```
 
-The test suite includes:
-- **Happy-path integration tests** against the `knots_sdlc` reference fixture
-- **Negative tests** for each validation rule (duplicate identifiers, unresolved references, type mismatches, invalid overrides, bad prompt params, invalid default_profile)
-- **Codegen verification** — generated Rust code is checked for expected output
+## Contributor Flow
 
-## The reference fixture
+1. Change the smallest sensible layer: grammar, lowering, validation, graph, codegen, or CLI.
+2. Add or update focused tests.
+3. Run `cargo test`.
+4. If user-facing behavior changed, update [README.md](/Users/cartine/loom/README.md) or [docs/getting-started.md](/Users/cartine/loom/docs/getting-started.md).
+5. If language semantics changed, update [schema.md](/Users/cartine/loom/schema.md) in the same change.
+6. If install or release behavior changed, update [docs/releasing.md](/Users/cartine/loom/docs/releasing.md) and `install.sh`.
 
-`tests/fixtures/knots_sdlc/` contains the complete Knots SDLC workflow from schema.md section 7. It has:
-- 6 queue states, 6 action states, 2 terminals, 1 escape
-- 6 steps, 3 phases
-- 6 profiles (autopilot, autopilot_with_pr, semiauto, and no-planning variants)
-- 6 prompt files with frontmatter
+## Project Layout
 
-This fixture is the primary integration test target. If you change the compiler, it should still parse, lower, validate, and generate compilable code for this workflow.
+```text
+loom/
+  Cargo.toml
+  README.md
+  CONTRIBUTING.md
+  schema.md
+  crates/
+    loom-core/
+      src/
+        lib.rs
+        grammar.pest
+        error.rs
+        config.rs
+        parse/
+        prompt/
+        ir/
+        graph/
+        codegen/
+        sim.rs
+        diff.rs
+        compat.rs
+    loom-cli/
+      src/
+        main.rs
+        commands/
+  tests/
+    fixtures/
+      knots_sdlc/
+      knots_sdlc_v2/
+```
 
-## Adding a new validation check
+## Architecture
 
-1. Add the error variant to `LoomError` in `error.rs` (or `LoomWarning` for non-fatal checks)
-2. Implement the check in `graph/validate.rs` (graph-level) or `ir/lower.rs` (name-resolution-level)
-3. Add a negative test that triggers the new error
-4. Verify the knots_sdlc fixture still validates clean
+Loom has two crates:
 
-## Adding a new codegen target
+- `loom-core`: parser, IR lowering, graph construction, validation, code generation, simulation, diff, and compatibility logic
+- `loom-cli`: the `loom` executable and command wiring
 
-1. Create `crates/loom-core/src/codegen/<lang>.rs`
-2. Add the variant to `CodegenTarget` in `codegen/mod.rs` and wire the dispatch
-3. Add the lang option to `EmitFormat` in `crates/loom-cli/src/commands/build.rs`
-4. Add the `--lang <name>` match arm in `crates/loom-cli/src/main.rs`
-5. Test: generate code for knots_sdlc and verify it compiles in the target language
+Compiler pipeline:
 
-## Style notes
+```text
+.loom files + prompts/*.md + loom.toml
+        │
+     parse      grammar -> AST
+        │
+     lower      AST -> IR + prompt loading
+        │
+     graph      IR -> workflow graph
+        │
+     validate   graph checks on the full workflow and each profile
+        │
+     codegen    Rust / Go / Python / TOML
+```
 
-- No unnecessary abstractions. Three similar lines are better than a premature helper.
-- Tests go in `#[cfg(test)] mod tests` at the bottom of each file, not in separate test files.
-- Error messages should be specific and actionable. Include the identifier name and context.
-- The `schema.md` spec is the source of truth. If the compiler disagrees with the spec, fix the compiler or update the spec — don't leave them out of sync.
+Important design constraints:
 
-## Commit messages
+- The compiler accumulates diagnostics instead of stopping at the first error.
+- Name resolution is two-phase so forward references are legal where the language allows them.
+- Wildcard transitions are expanded during graph construction.
+- Profiles are validated as filtered subgraphs of the full workflow.
+- `loom build` is intentionally validation-gated.
+- `schema.md` is the source of truth for language behavior.
 
-- Clear, imperative titles under 72 characters
-- Scope prefix when helpful: `codegen: add Go target`, `validate: check enum param values`
-- Never commit secrets or generated artifacts
+## Reference Fixtures
+
+`tests/fixtures/knots_sdlc/` is the main end-to-end fixture. It should continue to:
+
+- Parse cleanly
+- Validate cleanly
+- Render graphs
+- Simulate correctly
+- Generate code for all supported targets
+
+`tests/fixtures/knots_sdlc_v2/` exists primarily for `diff` and `check-compat` coverage.
+
+## Common Work
+
+### Add a validation rule
+
+1. Add or update the diagnostic in `crates/loom-core/src/error.rs`.
+2. Implement the rule in `crates/loom-core/src/graph/validate.rs` or `crates/loom-core/src/ir/lower.rs`.
+3. Add a focused negative test.
+4. Re-run the reference fixture validation.
+
+### Add or change code generation
+
+1. Update the relevant file under `crates/loom-core/src/codegen/`.
+2. Wire the target in `codegen/mod.rs` and `crates/loom-cli/src/commands/build.rs` if needed.
+3. Update CLI argument handling in `crates/loom-cli/src/main.rs` if the surface area changes.
+4. Add or update tests for generated output.
+
+### Change the language
+
+1. Update `schema.md` first or in the same change.
+2. Keep `grammar.pest` and parser behavior aligned with the spec.
+3. Update README or `docs/getting-started.md` if the onboarding story changes.
+4. Add fixture coverage for any new syntax or semantics.
+
+## Documentation Expectations
+
+Launch-facing docs should stay aligned with the shipped CLI. In practice that means:
+
+- README examples must be copy-pasteable against the current repo
+- New commands or flags must be reflected in the README and spec when user-facing
+- `loom init` behavior should be documented as it actually scaffolds, not as an idealized future layout
+- If the onboarding flow changes, update [README.md](/Users/cartine/loom/README.md) and [docs/getting-started.md](/Users/cartine/loom/docs/getting-started.md) in the same change
+- If release assets or install behavior change, update [docs/releasing.md](/Users/cartine/loom/docs/releasing.md) in the same change
+
+## Style
+
+- Prefer direct code over premature abstraction.
+- Keep tests close to the code in `#[cfg(test)] mod tests` where practical.
+- Make diagnostics specific and actionable.
+- Do not leave the implementation and spec disagreeing.
+
+## Commits
+
+- Use clear, imperative titles under 72 characters.
+- Add a scope prefix when it helps, for example `validate:`, `codegen:`, or `docs:`.
+- Do not commit generated artifacts or secrets.

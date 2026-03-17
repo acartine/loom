@@ -1,5 +1,7 @@
-use crate::ir::WorkflowIR;
 use super::{build_graph, EdgeKind};
+use crate::ir::WorkflowIR;
+
+type StateGroupPredicate = fn(&crate::ir::StateDef) -> bool;
 
 /// Output format for graph rendering
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,14 +61,26 @@ fn render_mermaid(ir: &WorkflowIR) -> String {
 
         match weight {
             EdgeKind::Claim { step } => {
-                out.push_str(&format!("    {} --> {} : claim ({})\n", src_name, dst_name, step));
+                out.push_str(&format!(
+                    "    {} --> {} : claim ({})\n",
+                    src_name, dst_name, step
+                ));
             }
-            EdgeKind::Outcome { outcome, is_success } => {
+            EdgeKind::Outcome {
+                outcome,
+                is_success,
+            } => {
                 let kind = if *is_success { "ok" } else { "fail" };
-                out.push_str(&format!("    {} --> {} : {} [{}]\n", src_name, dst_name, outcome, kind));
+                out.push_str(&format!(
+                    "    {} --> {} : {} [{}]\n",
+                    src_name, dst_name, outcome, kind
+                ));
             }
             EdgeKind::PhaseLink { phase } => {
-                out.push_str(&format!("    {} --> {} : phase ({})\n", src_name, dst_name, phase));
+                out.push_str(&format!(
+                    "    {} --> {} : phase ({})\n",
+                    src_name, dst_name, phase
+                ));
             }
             EdgeKind::Wildcard => {
                 // Skip wildcard edges in mermaid to avoid clutter
@@ -88,7 +102,7 @@ fn render_ascii(ir: &WorkflowIR) -> String {
     ));
 
     // Group states by type: queues, actions, terminals, escapes
-    let groups: &[(&str, fn(&crate::ir::StateDef) -> bool)] = &[
+    let groups: &[(&str, StateGroupPredicate)] = &[
         ("Q", crate::ir::StateDef::is_queue),
         ("A", crate::ir::StateDef::is_action),
         ("T", crate::ir::StateDef::is_terminal),
@@ -159,7 +173,10 @@ fn format_action_suffix(state: &crate::ir::StateDef) -> String {
 fn format_edge_label(weight: &EdgeKind) -> String {
     match weight {
         EdgeKind::Claim { step } => format!("claim: {}", step),
-        EdgeKind::Outcome { outcome, is_success } => {
+        EdgeKind::Outcome {
+            outcome,
+            is_success,
+        } => {
             let kind = if *is_success { "ok" } else { "fail" };
             format!("{} ({})", outcome, kind)
         }
@@ -189,7 +206,10 @@ fn render_dot(ir: &WorkflowIR) -> String {
         } else {
             "shape=box"
         };
-        out.push_str(&format!("    {} [label=\"{}\", {}];\n", name, display, attrs));
+        out.push_str(&format!(
+            "    {} [label=\"{}\", {}];\n",
+            name, display, attrs
+        ));
     }
 
     out.push('\n');
@@ -203,8 +223,15 @@ fn render_dot(ir: &WorkflowIR) -> String {
 
         let (label, style) = match weight {
             EdgeKind::Claim { step } => (format!("claim ({})", step), ""),
-            EdgeKind::Outcome { outcome, is_success } => {
-                let color = if *is_success { ", color=green" } else { ", color=red" };
+            EdgeKind::Outcome {
+                outcome,
+                is_success,
+            } => {
+                let color = if *is_success {
+                    ", color=green"
+                } else {
+                    ", color=red"
+                };
                 (outcome.clone(), color)
             }
             EdgeKind::PhaseLink { phase } => (format!("phase ({})", phase), ", style=dashed"),
@@ -229,8 +256,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]

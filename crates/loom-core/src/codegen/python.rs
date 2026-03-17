@@ -114,11 +114,7 @@ fn generate_outcome_enums(ir: &WorkflowIR, out: &mut String) {
                     .chain(prompt.failure.keys())
                     .enumerate()
                 {
-                    out.push_str(&format!(
-                        "    {} = {}\n",
-                        to_upper_snake(outcome),
-                        i
-                    ));
+                    out.push_str(&format!("    {} = {}\n", to_upper_snake(outcome), i));
                 }
                 out.push('\n');
 
@@ -134,10 +130,7 @@ fn generate_outcome_enums(ir: &WorkflowIR, out: &mut String) {
     }
 }
 
-fn generate_outcome_target_method(
-    prompt: &crate::prompt::PromptFile,
-    out: &mut String,
-) {
+fn generate_outcome_target_method(prompt: &crate::prompt::PromptFile, out: &mut String) {
     out.push_str("    def target(self) -> State:\n");
     out.push_str("        return {\n");
     for (outcome, target) in prompt.success.iter().chain(prompt.failure.iter()) {

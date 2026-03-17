@@ -59,8 +59,8 @@ struct PromptFrontmatter {
 /// Parse a prompt markdown file with YAML frontmatter
 pub fn parse_prompt(content: &str) -> LoomResult<PromptFile> {
     let (frontmatter_str, body) = split_frontmatter(content)?;
-    let frontmatter: PromptFrontmatter = serde_yaml::from_str(&frontmatter_str)
-        .map_err(|e| LoomError::Yaml(e.to_string()))?;
+    let frontmatter: PromptFrontmatter =
+        serde_yaml::from_str(&frontmatter_str).map_err(|e| LoomError::Yaml(e.to_string()))?;
 
     let body_params = extract_body_params(&body);
 
@@ -100,10 +100,7 @@ fn split_frontmatter(content: &str) -> LoomResult<(String, String)> {
 
 fn extract_body_params(body: &str) -> Vec<String> {
     let re = Regex::new(r"\{\{\s*(\w+)\s*\}\}").unwrap();
-    let mut params: Vec<String> = re
-        .captures_iter(body)
-        .map(|c| c[1].to_string())
-        .collect();
+    let mut params: Vec<String> = re.captures_iter(body).map(|c| c[1].to_string()).collect();
     params.sort();
     params.dedup();
     params

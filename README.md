@@ -1,196 +1,205 @@
 # Loom
 
 ![Coverage: 92%](https://img.shields.io/badge/coverage-92%25-brightgreen)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**A language and compiler for agentic workflows.**
+**A validating compiler for agent and human-in-the-loop workflows.**
 
-Loom lets you define complex agent workflows as structured, typed programs — then validates them at compile time and generates typed code. No runtime surprises. No implicit routing. No dead states hiding in production.
+Loom is for workflows where prompts, state transitions, and execution modes need to be explicit and safe. You define the workflow once, validate it before anything runs, and generate typed code that your runtime can consume directly.
 
+## What Loom is for
+
+Use Loom when you have:
+
+- Multi-step agent workflows with real state, not one prompt at a time
+- Prompt outcomes that should route to known states
+- Multiple execution modes such as autopilot and human-gated review
+- A need to catch broken transitions, missing prompts, and bad overrides before runtime
+
+Loom is not a workflow engine. It does not execute work. It compiles workflow definitions into validated artifacts.
+
+## Quick Start
+
+Install with the standard curl flow:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/acartine/loom/main/install.sh | sh
 ```
-loom validate    # catch every mistake before anything runs
-loom build       # generate typed code from your workflow
-loom graph       # visualize the full state machine
+
+Or build from source:
+
+```bash
+git clone https://github.com/acartine/loom.git
+cd loom
+cargo install --locked --path crates/loom-cli
 ```
 
-## The problem
+Sanity-check the reference workflow that ships with the repo:
 
-Agent workflows today are a mess:
-
-- State machines hardcoded across multiple files
-- Prompt strings buried in application code
-- Routing logic scattered through runtime handlers
-- Transitions that only fail in production
-- No way to know if a change breaks existing flows
-
-When an agent workflow is 15 states deep with 6 different execution profiles, you need a compiler — not a config file.
-
-## What Loom does
-
-Loom treats a workflow as a **typed program**, not a bag of YAML.
-
-You write `.loom` files that declare states, steps, phases, and profiles. Prompts live in markdown files with structured frontmatter that defines outcome routing. The compiler validates the entire graph, resolves every reference, and generates self-contained code.
-
+```bash
+loom validate tests/fixtures/knots_sdlc
+loom graph tests/fixtures/knots_sdlc --format ascii
+loom build tests/fixtures/knots_sdlc --lang rust > /tmp/knots_workflow.rs
 ```
-knots_sdlc/
-  workflow.loom       # states, steps, phases, profiles
-  loom.toml           # package metadata
+
+Then create your own workflow scaffold:
+
+```bash
+loom init support_triage
+cd support_triage
+loom validate
+loom build --lang rust > workflow.rs
+loom graph --format mermaid > workflow.mmd
+```
+
+The scaffold is intentionally small but complete: two queues, a produce action, a gate action, two prompt files, one phase, and a default profile. It validates cleanly without warnings.
+
+For a fuller walkthrough, see [docs/getting-started.md](/Users/cartine/loom/docs/getting-started.md).
+
+## How It Works
+
+A workflow directory contains:
+
+- `workflow.loom`: states, actions, steps, phases, and optional inline profiles
+- `loom.toml`: package metadata and default profile
+- `prompts/*.md`: markdown prompts with YAML frontmatter for outcomes and params
+- `profiles/*.loom`: optional profile files included from `workflow.loom`
+
+Minimal example:
+
+```text
+my_workflow/
+  workflow.loom
+  loom.toml
   prompts/
-    planning.md       # prompt + outcome routing
+    work.md
+    review.md
+  profiles/
+```
+
+Larger workflows typically move profiles into separate files:
+
+```text
+knots_sdlc/
+  workflow.loom
+  loom.toml
+  prompts/
+    planning.md
     plan_review.md
     implementation.md
-    ...
+    implementation_review.md
+    shipment.md
+    shipment_review.md
   profiles/
-    autopilot.loom    # full agent autonomy
-    semiauto.loom     # human-gated reviews
+    autopilot.loom
+    semiauto.loom
 ```
 
-### Prompts own routing
+## Step-By-Step
 
-The prompt is the routing table. Each prompt declares its own outcomes and where they lead:
+1. Define states and actions in `workflow.loom`.
+2. Put each action prompt in `prompts/<prompt-name>.md`.
+3. Declare success and failure routing in the prompt frontmatter.
+4. Group steps into phases.
+5. Select phases and executors with profiles.
+6. Run `loom validate` until the graph is clean.
+7. Generate code with `loom build`.
+
+The fastest evaluation loop is:
+
+1. Run `loom init <name>`.
+2. Open `workflow.loom`, `prompts/work.md`, and `prompts/review.md`.
+3. Run `loom validate`.
+4. Run `loom build --lang rust`.
+5. Run `loom graph --format mermaid`.
+6. Compare the scaffold to `tests/fixtures/knots_sdlc` for a richer multi-phase example.
+
+Example workflow fragment:
+
+```loom
+workflow my_workflow v1 {
+    queue ready_for_planning "Ready for Planning"
+    queue ready_for_review   "Ready for Review"
+
+    action planning "Planning" {
+        produce agent
+        prompt planning
+    }
+
+    action review "Review" {
+        gate review agent
+        prompt review
+    }
+
+    terminal done      "Done"
+    escape   deferred  "Deferred"
+
+    step plan     { ready_for_planning -> planning }
+    step plan_rev { ready_for_review   -> review }
+
+    phase main_phase {
+        produce plan
+        gate plan_rev
+    }
+}
+```
+
+Example prompt frontmatter:
 
 ```yaml
 ---
+accept:
+  - Implementation steps are concrete
+  - Risks are called out
+
 success:
-  plan_complete: ready_for_plan_review
+  plan_complete: ready_for_review
+
 failure:
   insufficient_context: ready_for_planning
-  out_of_scope: ready_for_planning
+
+params:
+  complexity:
+    type: enum
+    values: ["small", "medium", "large"]
 ---
 ```
 
-This keeps transition logic next to the action that produces it, not scattered through runtime code.
-
-### Profiles are subgraphs
-
-Profiles select which phases are active and override who executes each action. They're not patches on a default — they're independent subgraphs, validated independently.
-
-```
-profile autopilot "Autopilot" {
-    phases [planning_phase, implementation_phase, shipment_phase]
-    output remote_main
-}
-
-profile semiauto "Semi-automatic" {
-    phases [planning_phase, implementation_phase, shipment_phase]
-    output remote_main
-    override plan_review { executor human }
-    override implementation_review { executor human }
-}
-```
-
-### Compile-time validation
-
-The compiler catches mistakes that would otherwise surface at runtime:
-
-- Dead states with no inbound transitions
-- States that can never reach a terminal
-- Missing or orphaned prompt files
-- Outcome targets that don't exist
-- Prompt parameters referenced but not declared
-- Invalid profile overrides
-- Phase composition errors
-- Per-profile subgraph validation
-
-Every profile is validated as an independent graph. A workflow can define phases that only make sense in combination — the compiler checks each profile's view of the world separately.
-
 ## CLI
 
-```bash
-loom init <name>                    # scaffold a new workflow
-loom validate [dir]                 # full validation pipeline
-loom build [--lang rust|go|python]  # generate typed code
-loom build --emit toml              # TOML interchange format
-loom graph [--profile <name>]       # mermaid, DOT, or ASCII output
-loom sim [--profile <name>]         # interactive transition simulator
-loom diff <v1-dir> <v2-dir>         # diff two workflow versions
-loom check-compat <old> <new>       # backward compatibility check
-```
+| Command | Description |
+|---------|-------------|
+| `loom init <name>` | Scaffold a new workflow directory |
+| `loom validate [dir]` | Parse, load prompts, validate the full graph, and print warnings |
+| `loom build [dir] --lang rust\|go\|python` | Validate and generate code |
+| `loom build [dir] --emit toml` | Emit TOML interchange output |
+| `loom graph [dir] --format mermaid\|dot\|ascii` | Render the full graph or a profile subgraph |
+| `loom sim [dir] --profile <name>` | Walk the workflow interactively |
+| `loom diff <old-dir> <new-dir>` | Show structural changes between workflow versions |
+| `loom check-compat <old-dir> <new-dir>` | Check backward compatibility and optionally emit a state map |
 
-### Quick start
+## Why This Is Useful
 
-```bash
-cargo install --path crates/loom-cli
+Without a compiler, workflow logic tends to sprawl across prompt templates, runtime handlers, and application code. Loom keeps the routing model in one place and validates:
 
-# Create a new workflow
-loom init my_workflow
-cd my_workflow
+- Dead or unreachable states
+- Missing or orphaned prompt files
+- Invalid outcome targets
+- Bad profile overrides
+- Phase composition errors
+- Per-profile graph issues
 
-# Validate it
-loom validate
+## Docs
 
-# Generate Rust code
-loom build --lang rust > src/workflow.rs
-
-# Visualize the graph
-loom graph --format mermaid
-```
-
-## Code generation
-
-`loom build` produces self-contained code with no runtime dependency on Loom:
-
-- **State enum** with all workflow states
-- **Outcome enums** per action with `target()` and `is_success()` methods
-- **Transition function** `apply(state, outcome) -> Result<State>`
-- **Profile constants** with phase lists, output kinds, and executor maps
-- **Prompt metadata** including acceptance criteria, typed parameters, and outcome routing
-
-The generated code compiles on its own. Your runtime system consumes it directly.
-
-## Architecture
-
-Loom is a Rust workspace with two crates:
-
-- **`loom-core`** — library: PEG parser, AST, IR with two-phase name resolution, petgraph-based graph analysis, validation, codegen
-- **`loom-cli`** — binary: the `loom` command
-
-The compiler pipeline:
-
-```
-.loom files + prompts/*.md + loom.toml
-        |
-     [ parse ]      PEG grammar -> AST
-        |
-     [ lower ]      AST -> IR (name resolution, prompt loading)
-        |
-     [ graph ]      IR -> petgraph (implicit transitions, wildcards)
-        |
-     [ validate ]   12 error checks + 5 warning checks, per-profile
-        |
-     [ codegen ]    IR -> Rust / Go / Python / TOML
-```
-
-## Spec
-
-The full language specification lives in [`schema.md`](./schema.md). It covers:
-
-- File and package structure
-- The `.loom` PEG grammar
-- Prompt frontmatter schema
-- Profile selection and overrides
-- Compiler semantics and implicit transitions
-- Graph validation rules
-- Code generation contracts
-- A complete reference workflow (Knots SDLC with 6 profiles)
+- [Getting started guide](/Users/cartine/loom/docs/getting-started.md)
+- [Release guide](/Users/cartine/loom/docs/releasing.md)
+- [Language specification](/Users/cartine/loom/schema.md)
+- [Contributing guide](/Users/cartine/loom/CONTRIBUTING.md)
 
 ## Status
 
-Feature complete against the language spec. The reference Knots SDLC workflow (15 states, 6 steps, 3 phases, 6 profiles) parses, validates, and generates compilable code in all three target languages.
-
-**Implemented:**
-- Full PEG parser for `.loom` files and profile files
-- YAML frontmatter prompt parser with parameter extraction
-- IR lowering with two-phase name resolution
-- Graph construction with explicit outcome routing and wildcard expansion
-- 12 error checks + 5 warning checks with per-profile subgraph validation
-- Code generation: Rust, Go, Python
-- TOML interchange format
-- Graph output: Mermaid, DOT, ASCII
-- Interactive transition simulator
-- Structural diff between workflow versions
-- Backward compatibility checking with migration map emission
-- CLI: `init`, `validate`, `build`, `graph`, `sim`, `diff`, `check-compat`
+The current repo is feature-complete enough to evaluate end-to-end: the reference fixture parses, validates, renders, diffs, checks compatibility, and generates Rust, Go, Python, and TOML output. The repository now also includes CI, tagged GitHub release automation, release tarballs, and a curl-based installer.
 
 ## License
 
-MIT
+[MIT](LICENSE)

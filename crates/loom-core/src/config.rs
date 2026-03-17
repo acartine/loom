@@ -46,7 +46,10 @@ default_profile = "autopilot"
         let config = parse_config(content).unwrap();
         assert_eq!(config.workflow.name, "knots_sdlc");
         assert_eq!(config.workflow.version, 1);
-        assert_eq!(config.workflow.default_profile, Some("autopilot".to_string()));
+        assert_eq!(
+            config.workflow.default_profile,
+            Some("autopilot".to_string())
+        );
     }
 
     #[test]

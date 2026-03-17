@@ -5,11 +5,10 @@ use loom_core::graph::profile;
 use loom_core::sim;
 
 pub fn run(dir: &Path, profile_name: Option<&str>) -> miette::Result<()> {
-    let (ir, _diag) = loom_core::load_workflow(dir)
-        .map_err(|errors| {
-            let msgs: Vec<String> = errors.iter().map(|e| e.to_string()).collect();
-            miette::miette!("failed to load workflow:\n{}", msgs.join("\n"))
-        })?;
+    let (ir, _diag) = loom_core::load_workflow(dir).map_err(|errors| {
+        let msgs: Vec<String> = errors.iter().map(|e| e.to_string()).collect();
+        miette::miette!("failed to load workflow:\n{}", msgs.join("\n"))
+    })?;
 
     let working_ir = if let Some(pname) = profile_name {
         profile::extract_profile_subgraph(&ir, pname)
@@ -18,8 +17,7 @@ pub fn run(dir: &Path, profile_name: Option<&str>) -> miette::Result<()> {
         ir
     };
 
-    let mut state = sim::new(&working_ir, profile_name)
-        .map_err(|e| miette::miette!("{}", e))?;
+    let mut state = sim::new(&working_ir, profile_name).map_err(|e| miette::miette!("{}", e))?;
 
     let label = profile_name.unwrap_or(&working_ir.name);
     println!("[{}] Starting at: {}\n", label, state.current);
@@ -76,7 +74,9 @@ pub fn run(dir: &Path, profile_name: Option<&str>) -> miette::Result<()> {
 }
 
 fn print_current_state(state: &sim::SimState, ir: &loom_core::ir::WorkflowIR) {
-    let display = ir.states.get(&state.current)
+    let display = ir
+        .states
+        .get(&state.current)
         .map(|s| s.display_name())
         .unwrap_or("???");
     println!("Current state: {} ({})", state.current, display);

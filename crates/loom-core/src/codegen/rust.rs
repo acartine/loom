@@ -58,7 +58,9 @@ fn generate_state_enum(ir: &WorkflowIR, out: &mut String) {
 
     out.push_str("    pub fn is_terminal(&self) -> bool {\n");
     out.push_str("        matches!(self, ");
-    let terminals: Vec<String> = ir.states.iter()
+    let terminals: Vec<String> = ir
+        .states
+        .iter()
         .filter(|(_, s)| s.is_terminal())
         .map(|(name, _)| format!("State::{}", to_pascal_case(name)))
         .collect();
@@ -124,7 +126,9 @@ fn generate_outcome_enums(ir: &WorkflowIR, out: &mut String) {
                     out.push_str("        false\n");
                 } else {
                     out.push_str("        matches!(self, ");
-                    let success_variants: Vec<String> = prompt.success.keys()
+                    let success_variants: Vec<String> = prompt
+                        .success
+                        .keys()
                         .map(|k| format!("Self::{}", to_pascal_case(k)))
                         .collect();
                     out.push_str(&success_variants.join(" | "));
@@ -140,7 +144,9 @@ fn generate_outcome_enums(ir: &WorkflowIR, out: &mut String) {
 /// Generate the `apply(state, outcome) -> Result<State, ApplyError>` transition function
 fn generate_transition_fn(ir: &WorkflowIR, out: &mut String) {
     // Collect action states that have outcomes
-    let actions_with_outcomes: Vec<(&str, &str)> = ir.states.iter()
+    let actions_with_outcomes: Vec<(&str, &str)> = ir
+        .states
+        .iter()
         .filter_map(|(name, state)| {
             if let StateDef::Action { prompt_name, .. } = state {
                 if ir.prompts.contains_key(prompt_name) {
@@ -163,7 +169,11 @@ fn generate_transition_fn(ir: &WorkflowIR, out: &mut String) {
     out.push_str("pub enum Outcome {\n");
     for (action_name, _) in &actions_with_outcomes {
         let enum_name = format!("{}Outcome", to_pascal_case(action_name));
-        out.push_str(&format!("    {}({}),\n", to_pascal_case(action_name), enum_name));
+        out.push_str(&format!(
+            "    {}({}),\n",
+            to_pascal_case(action_name),
+            enum_name
+        ));
     }
     out.push_str("}\n\n");
 
@@ -228,7 +238,9 @@ fn generate_profiles(ir: &WorkflowIR, out: &mut String) {
                 for step_name in [&phase.produce_step, &phase.gate_step] {
                     if let Some(step) = ir.steps.get(step_name) {
                         if let Some(state) = ir.states.get(&step.action) {
-                            let executor = profile.overrides.get(&step.action)
+                            let executor = profile
+                                .overrides
+                                .get(&step.action)
                                 .copied()
                                 .or_else(|| state.executor())
                                 .unwrap_or(Executor::Agent);
@@ -288,7 +300,10 @@ fn generate_prompt_metadata(ir: &WorkflowIR, out: &mut String) {
 
     for (prompt_name, prompt) in &ir.prompts {
         let var_name = format!("PROMPT_{}", prompt_name.to_uppercase());
-        out.push_str(&format!("pub const {}: PromptMeta = PromptMeta {{\n", var_name));
+        out.push_str(&format!(
+            "pub const {}: PromptMeta = PromptMeta {{\n",
+            var_name
+        ));
         out.push_str(&format!("    name: \"{}\",\n", prompt_name));
 
         // Accept
@@ -322,13 +337,15 @@ fn generate_prompt_metadata(ir: &WorkflowIR, out: &mut String) {
         for (outcome, target) in &prompt.success {
             out.push_str(&format!(
                 "OutcomeMeta {{ name: \"{}\", target: State::{}, is_success: true }}, ",
-                outcome, to_pascal_case(target)
+                outcome,
+                to_pascal_case(target)
             ));
         }
         for (outcome, target) in &prompt.failure {
             out.push_str(&format!(
                 "OutcomeMeta {{ name: \"{}\", target: State::{}, is_success: false }}, ",
-                outcome, to_pascal_case(target)
+                outcome,
+                to_pascal_case(target)
             ));
         }
         out.push_str("],\n");
@@ -348,8 +365,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]

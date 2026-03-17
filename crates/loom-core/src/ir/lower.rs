@@ -1,11 +1,11 @@
-use std::path::Path;
 use indexmap::IndexMap;
+use std::path::Path;
 
-use crate::error::{Diagnostics, LoomError};
-use crate::parse::ast::*;
-use crate::parse;
-use crate::prompt;
 use super::*;
+use crate::error::{Diagnostics, LoomError};
+use crate::parse;
+use crate::parse::ast::*;
+use crate::prompt;
 
 /// Lower an AST workflow into the IR.
 /// `workflow_dir` is the directory containing the workflow files (for resolving includes/prompts).
@@ -37,72 +37,102 @@ pub fn lower_with_config(
         match decl {
             Declaration::Queue(q) => {
                 if states.contains_key(&q.name) {
-                    diag.error(LoomError::DuplicateIdentifier { name: q.name.clone() });
-                } else {
-                    states.insert(q.name.clone(), StateDef::Queue {
+                    diag.error(LoomError::DuplicateIdentifier {
                         name: q.name.clone(),
-                        display_name: q.display_name.clone(),
                     });
+                } else {
+                    states.insert(
+                        q.name.clone(),
+                        StateDef::Queue {
+                            name: q.name.clone(),
+                            display_name: q.display_name.clone(),
+                        },
+                    );
                 }
             }
             Declaration::Action(a) => {
                 if states.contains_key(&a.name) {
-                    diag.error(LoomError::DuplicateIdentifier { name: a.name.clone() });
+                    diag.error(LoomError::DuplicateIdentifier {
+                        name: a.name.clone(),
+                    });
                 } else {
                     let executor = match &a.action_type {
                         ActionType::Produce(e) | ActionType::Gate(_, e) => *e,
                     };
-                    states.insert(a.name.clone(), StateDef::Action {
-                        name: a.name.clone(),
-                        display_name: a.display_name.clone(),
-                        action_type: a.action_type.clone(),
-                        prompt_name: a.prompt.clone(),
-                        constraints: a.constraints.clone(),
-                        executor,
-                    });
+                    states.insert(
+                        a.name.clone(),
+                        StateDef::Action {
+                            name: a.name.clone(),
+                            display_name: a.display_name.clone(),
+                            action_type: a.action_type.clone(),
+                            prompt_name: a.prompt.clone(),
+                            constraints: a.constraints.clone(),
+                            executor,
+                        },
+                    );
                     action_prompt_refs.push((a.name.clone(), a.prompt.clone()));
                 }
             }
             Declaration::Terminal(t) => {
                 if states.contains_key(&t.name) {
-                    diag.error(LoomError::DuplicateIdentifier { name: t.name.clone() });
-                } else {
-                    states.insert(t.name.clone(), StateDef::Terminal {
+                    diag.error(LoomError::DuplicateIdentifier {
                         name: t.name.clone(),
-                        display_name: t.display_name.clone().unwrap_or_else(|| t.name.clone()),
                     });
+                } else {
+                    states.insert(
+                        t.name.clone(),
+                        StateDef::Terminal {
+                            name: t.name.clone(),
+                            display_name: t.display_name.clone().unwrap_or_else(|| t.name.clone()),
+                        },
+                    );
                 }
             }
             Declaration::Escape(e) => {
                 if states.contains_key(&e.name) {
-                    diag.error(LoomError::DuplicateIdentifier { name: e.name.clone() });
-                } else {
-                    states.insert(e.name.clone(), StateDef::Escape {
+                    diag.error(LoomError::DuplicateIdentifier {
                         name: e.name.clone(),
-                        display_name: e.display_name.clone().unwrap_or_else(|| e.name.clone()),
                     });
+                } else {
+                    states.insert(
+                        e.name.clone(),
+                        StateDef::Escape {
+                            name: e.name.clone(),
+                            display_name: e.display_name.clone().unwrap_or_else(|| e.name.clone()),
+                        },
+                    );
                 }
             }
             Declaration::Step(s) => {
                 if steps.contains_key(&s.name) {
-                    diag.error(LoomError::DuplicateIdentifier { name: s.name.clone() });
-                } else {
-                    steps.insert(s.name.clone(), StepDef {
+                    diag.error(LoomError::DuplicateIdentifier {
                         name: s.name.clone(),
-                        queue: s.queue.clone(),
-                        action: s.action.clone(),
                     });
+                } else {
+                    steps.insert(
+                        s.name.clone(),
+                        StepDef {
+                            name: s.name.clone(),
+                            queue: s.queue.clone(),
+                            action: s.action.clone(),
+                        },
+                    );
                 }
             }
             Declaration::Phase(p) => {
                 if phases.contains_key(&p.name) {
-                    diag.error(LoomError::DuplicateIdentifier { name: p.name.clone() });
-                } else {
-                    phases.insert(p.name.clone(), PhaseDef {
+                    diag.error(LoomError::DuplicateIdentifier {
                         name: p.name.clone(),
-                        produce_step: p.produce_step.clone(),
-                        gate_step: p.gate_step.clone(),
                     });
+                } else {
+                    phases.insert(
+                        p.name.clone(),
+                        PhaseDef {
+                            name: p.name.clone(),
+                            produce_step: p.produce_step.clone(),
+                            gate_step: p.gate_step.clone(),
+                        },
+                    );
                 }
             }
             Declaration::Profile(p) => {
@@ -111,14 +141,12 @@ pub fn lower_with_config(
             Declaration::Include(inc) => {
                 let path = workflow_dir.join(&inc.path);
                 match std::fs::read_to_string(&path) {
-                    Ok(content) => {
-                        match parse::parse_profile_file(&content) {
-                            Ok(profile_decl) => {
-                                register_profile(&profile_decl, &mut profiles, &mut diag);
-                            }
-                            Err(e) => diag.error(e),
+                    Ok(content) => match parse::parse_profile_file(&content) {
+                        Ok(profile_decl) => {
+                            register_profile(&profile_decl, &mut profiles, &mut diag);
                         }
-                    }
+                        Err(e) => diag.error(e),
+                    },
                     Err(e) => diag.error(LoomError::Io(e)),
                 }
             }
@@ -133,13 +161,17 @@ pub fn lower_with_config(
         if prompts.contains_key(prompt_name) {
             continue;
         }
-        let prompt_path = workflow_dir.join("prompts").join(format!("{}.md", prompt_name));
+        let prompt_path = workflow_dir
+            .join("prompts")
+            .join(format!("{}.md", prompt_name));
         match prompt::load_prompt(&prompt_path) {
             Ok(pf) => {
                 prompts.insert(prompt_name.clone(), pf);
             }
             Err(_) => {
-                diag.error(LoomError::MissingPrompt { name: prompt_name.clone() });
+                diag.error(LoomError::MissingPrompt {
+                    name: prompt_name.clone(),
+                });
             }
         }
     }
@@ -152,9 +184,12 @@ pub fn lower_with_config(
                 name: step.queue.clone(),
                 context: format!("step '{}' queue reference", step.name),
             });
-        } else if !states.get(&step.queue).map_or(false, |s| s.is_queue()) {
+        } else if !states.get(&step.queue).is_some_and(|s| s.is_queue()) {
             diag.error(LoomError::StepTypeMismatch {
-                message: format!("step '{}': left side '{}' is not a queue state", step.name, step.queue),
+                message: format!(
+                    "step '{}': left side '{}' is not a queue state",
+                    step.name, step.queue
+                ),
             });
         }
 
@@ -163,9 +198,12 @@ pub fn lower_with_config(
                 name: step.action.clone(),
                 context: format!("step '{}' action reference", step.name),
             });
-        } else if !states.get(&step.action).map_or(false, |s| s.is_action()) {
+        } else if !states.get(&step.action).is_some_and(|s| s.is_action()) {
             diag.error(LoomError::StepTypeMismatch {
-                message: format!("step '{}': right side '{}' is not an action state", step.name, step.action),
+                message: format!(
+                    "step '{}': right side '{}' is not an action state",
+                    step.name, step.action
+                ),
             });
         }
     }
@@ -225,7 +263,9 @@ pub fn lower_with_config(
         }
 
         // Check override references
-        let profile_actions: Vec<String> = profile.phases.iter()
+        let profile_actions: Vec<String> = profile
+            .phases
+            .iter()
             .filter_map(|pn| phases.get(pn))
             .flat_map(|phase| {
                 let mut actions = Vec::new();
@@ -290,7 +330,8 @@ pub fn lower_with_config(
         // Semantic validation of prompt parameters
         for (param_name, param_def) in &pf.params {
             // Enum params must have values
-            if param_def.param_type == crate::prompt::ParamType::Enum && param_def.values.is_empty() {
+            if param_def.param_type == crate::prompt::ParamType::Enum && param_def.values.is_empty()
+            {
                 diag.error(LoomError::ParamValidation {
                     prompt: prompt_name.clone(),
                     param: param_name.clone(),
@@ -359,17 +400,20 @@ pub fn lower_with_config(
         return Err(diag.errors);
     }
 
-    Ok((WorkflowIR {
-        name: ast.name.clone(),
-        version: ast.version,
-        default_profile,
-        states,
-        steps,
-        phases,
-        profiles,
-        wildcard_targets,
-        prompts,
-    }, diag))
+    Ok((
+        WorkflowIR {
+            name: ast.name.clone(),
+            version: ast.version,
+            default_profile,
+            states,
+            steps,
+            phases,
+            profiles,
+            wildcard_targets,
+            prompts,
+        },
+        diag,
+    ))
 }
 
 fn register_profile(
@@ -378,7 +422,9 @@ fn register_profile(
     diag: &mut Diagnostics,
 ) {
     if profiles.contains_key(&p.name) {
-        diag.error(LoomError::DuplicateIdentifier { name: p.name.clone() });
+        diag.error(LoomError::DuplicateIdentifier {
+            name: p.name.clone(),
+        });
         return;
     }
 
@@ -411,8 +457,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]
@@ -450,7 +495,9 @@ mod tests {
             }
         "#;
         let err = lower_inline(src).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::DuplicateIdentifier { name } if name == "q1")));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::DuplicateIdentifier { name } if name == "q1")));
     }
 
     #[test]
@@ -462,7 +509,9 @@ mod tests {
             }
         "#;
         let err = lower_inline(src).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::UnresolvedReference { name, .. } if name == "nonexistent")));
+        assert!(err.iter().any(
+            |e| matches!(e, LoomError::UnresolvedReference { name, .. } if name == "nonexistent")
+        ));
     }
 
     #[test]
@@ -475,7 +524,9 @@ mod tests {
             }
         "#;
         let err = lower_inline(src).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::StepTypeMismatch { .. })));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::StepTypeMismatch { .. })));
     }
 
     #[test]
@@ -498,7 +549,9 @@ mod tests {
             }
         "#;
         let err = lower_inline(src).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::InvalidOverride { action } if action == "a3")));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::InvalidOverride { action } if action == "a3")));
     }
 
     #[test]
@@ -517,7 +570,9 @@ mod tests {
         let tmp = std::env::temp_dir().join("loom_test_empty");
         let _ = std::fs::create_dir_all(&tmp);
         let err = lower_with_config(&ast, &tmp, Some("nonexistent".to_string())).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::InvalidDefaultProfile { name } if name == "nonexistent")));
+        assert!(err.iter().any(
+            |e| matches!(e, LoomError::InvalidDefaultProfile { name } if name == "nonexistent")
+        ));
     }
 
     #[test]
@@ -526,7 +581,9 @@ mod tests {
         let tmp = std::env::temp_dir().join("loom_test_bad_param");
         let prompts_dir = tmp.join("prompts");
         let _ = std::fs::create_dir_all(&prompts_dir);
-        std::fs::write(prompts_dir.join("work.md"), r#"---
+        std::fs::write(
+            prompts_dir.join("work.md"),
+            r#"---
 accept: []
 success:
   done: done
@@ -537,7 +594,9 @@ params:
     description: Pick a color
 ---
 Do the thing.
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let src = r#"
             workflow test v1 {
@@ -549,7 +608,9 @@ Do the thing.
         "#;
         let ast = crate::parse::parse_workflow(src).unwrap();
         let err = lower(&ast, &tmp).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::ParamValidation { param, .. } if param == "color")));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::ParamValidation { param, .. } if param == "color")));
     }
 
     #[test]
@@ -567,7 +628,9 @@ Do the thing.
         "#;
         let err = lower_inline(src).unwrap_err();
         // s2's action (a2) is produce, but it's used as gate
-        assert!(err.iter().any(|e| matches!(e, LoomError::PhaseTypeMismatch { .. })));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::PhaseTypeMismatch { .. })));
     }
 
     #[test]
@@ -594,7 +657,9 @@ Do the thing.
             }
         "#;
         let err = lower_inline(src).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::StepTypeMismatch { .. })));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::StepTypeMismatch { .. })));
     }
 
     #[test]
@@ -641,7 +706,9 @@ Do the thing.
             }
         "#;
         let err = lower_inline(src).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::ProfileError { .. })));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::ProfileError { .. })));
     }
 
     #[test]
@@ -663,7 +730,9 @@ Do the thing.
         let tmp = std::env::temp_dir().join("loom_test_invalid_outcome_target");
         let prompts_dir = tmp.join("prompts");
         let _ = std::fs::create_dir_all(&prompts_dir);
-        std::fs::write(prompts_dir.join("work.md"), r#"---
+        std::fs::write(
+            prompts_dir.join("work.md"),
+            r#"---
 accept: []
 success:
   done: nonexistent_state
@@ -671,7 +740,9 @@ failure: {}
 params: {}
 ---
 Do work.
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let src = r#"
             workflow test v1 {
@@ -682,7 +753,9 @@ Do work.
         "#;
         let ast = crate::parse::parse_workflow(src).unwrap();
         let err = lower(&ast, &tmp).unwrap_err();
-        assert!(err.iter().any(|e| matches!(e, LoomError::InvalidOutcomeTarget { .. })));
+        assert!(err
+            .iter()
+            .any(|e| matches!(e, LoomError::InvalidOutcomeTarget { .. })));
     }
 
     #[test]
@@ -690,7 +763,9 @@ Do work.
         let tmp = std::env::temp_dir().join("loom_test_undeclared_body_param");
         let prompts_dir = tmp.join("prompts");
         let _ = std::fs::create_dir_all(&prompts_dir);
-        std::fs::write(prompts_dir.join("work.md"), r#"---
+        std::fs::write(
+            prompts_dir.join("work.md"),
+            r#"---
 accept: []
 success:
   done: done
@@ -698,7 +773,9 @@ failure: {}
 params: {}
 ---
 Do the {{ unknown }} thing.
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let src = r#"
             workflow test v1 {
@@ -720,7 +797,9 @@ Do the {{ unknown }} thing.
         let tmp = std::env::temp_dir().join("loom_test_bool_param_bad_default");
         let prompts_dir = tmp.join("prompts");
         let _ = std::fs::create_dir_all(&prompts_dir);
-        std::fs::write(prompts_dir.join("work.md"), r#"---
+        std::fs::write(
+            prompts_dir.join("work.md"),
+            r#"---
 accept: []
 success:
   done: done
@@ -731,7 +810,9 @@ params:
     default: "yes"
 ---
 Use {{ flag }}.
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let src = r#"
             workflow test v1 {
@@ -753,7 +834,9 @@ Use {{ flag }}.
         let tmp = std::env::temp_dir().join("loom_test_int_param_bad_default");
         let prompts_dir = tmp.join("prompts");
         let _ = std::fs::create_dir_all(&prompts_dir);
-        std::fs::write(prompts_dir.join("work.md"), r#"---
+        std::fs::write(
+            prompts_dir.join("work.md"),
+            r#"---
 accept: []
 success:
   done: done
@@ -764,7 +847,9 @@ params:
     default: "abc"
 ---
 Count {{ count }}.
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let src = r#"
             workflow test v1 {
@@ -786,7 +871,9 @@ Count {{ count }}.
         let tmp = std::env::temp_dir().join("loom_test_enum_param_default_not_in_values");
         let prompts_dir = tmp.join("prompts");
         let _ = std::fs::create_dir_all(&prompts_dir);
-        std::fs::write(prompts_dir.join("work.md"), r#"---
+        std::fs::write(
+            prompts_dir.join("work.md"),
+            r#"---
 accept: []
 success:
   done: done
@@ -798,7 +885,9 @@ params:
     default: "green"
 ---
 Color {{ color }}.
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let src = r#"
             workflow test v1 {

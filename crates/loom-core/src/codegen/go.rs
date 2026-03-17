@@ -31,10 +31,7 @@ fn to_pascal_case(s: &str) -> String {
             let mut chars = word.chars();
             match chars.next() {
                 None => String::new(),
-                Some(c) => {
-                    c.to_uppercase().collect::<String>()
-                        + &chars.as_str().to_lowercase()
-                }
+                Some(c) => c.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase(),
             }
         })
         .collect()
@@ -45,10 +42,7 @@ fn generate_state_type(ir: &WorkflowIR, out: &mut String) {
     out.push_str("const (\n");
     for (i, name) in ir.states.keys().enumerate() {
         if i == 0 {
-            out.push_str(&format!(
-                "\t{} State = iota\n",
-                to_pascal_case(name)
-            ));
+            out.push_str(&format!("\t{} State = iota\n", to_pascal_case(name)));
         } else {
             out.push_str(&format!("\t{}\n", to_pascal_case(name)));
         }
@@ -119,9 +113,7 @@ fn generate_outcome_types(ir: &WorkflowIR, out: &mut String) {
         if let StateDef::Action { prompt_name, .. } = state {
             if let Some(prompt) = ir.prompts.get(prompt_name) {
                 let type_name = format!("{}Outcome", to_pascal_case(name));
-                generate_single_outcome_type(
-                    &type_name, name, prompt, out,
-                );
+                generate_single_outcome_type(&type_name, name, prompt, out);
             }
         }
     }
@@ -156,18 +148,10 @@ fn generate_single_outcome_type(
     generate_outcome_is_success(type_name, prompt, out);
 }
 
-fn generate_outcome_target(
-    type_name: &str,
-    prompt: &crate::prompt::PromptFile,
-    out: &mut String,
-) {
-    out.push_str(&format!(
-        "func (o {}) Target() State {{\n",
-        type_name
-    ));
+fn generate_outcome_target(type_name: &str, prompt: &crate::prompt::PromptFile, out: &mut String) {
+    out.push_str(&format!("func (o {}) Target() State {{\n", type_name));
     out.push_str("\tswitch o {\n");
-    for (outcome, target) in prompt.success.iter().chain(prompt.failure.iter())
-    {
+    for (outcome, target) in prompt.success.iter().chain(prompt.failure.iter()) {
         out.push_str(&format!(
             "\tcase {}:\n\t\treturn {}\n",
             to_pascal_case(outcome),
@@ -184,10 +168,7 @@ fn generate_outcome_is_success(
     prompt: &crate::prompt::PromptFile,
     out: &mut String,
 ) {
-    out.push_str(&format!(
-        "func (o {}) IsSuccess() bool {{\n",
-        type_name
-    ));
+    out.push_str(&format!("func (o {}) IsSuccess() bool {{\n", type_name));
     if prompt.success.is_empty() {
         out.push_str("\treturn false\n");
     } else if prompt.success.len() == 1 {
@@ -241,9 +222,7 @@ fn generate_apply_fn(ir: &WorkflowIR, out: &mut String) {
         return;
     }
 
-    out.push_str(
-        "func Apply(state State, outcome Outcome) (State, error) {\n",
-    );
+    out.push_str("func Apply(state State, outcome Outcome) (State, error) {\n");
     out.push_str("\tswitch state {\n");
     for (action_name, _) in &actions {
         let pascal = to_pascal_case(action_name);
@@ -260,9 +239,7 @@ fn generate_apply_fn(ir: &WorkflowIR, out: &mut String) {
             pascal
         ));
     }
-    out.push_str(
-        "\tdefault:\n\t\treturn 0, fmt.Errorf(\"no transitions from state %d\", state)\n",
-    );
+    out.push_str("\tdefault:\n\t\treturn 0, fmt.Errorf(\"no transitions from state %d\", state)\n");
     out.push_str("\t}\n");
     out.push_str("}\n\n");
 }
@@ -284,11 +261,7 @@ fn generate_profile_struct(out: &mut String) {
     out.push_str("}\n\n");
 }
 
-fn generate_single_profile(
-    ir: &WorkflowIR,
-    profile: &crate::ir::ProfileDef,
-    out: &mut String,
-) {
+fn generate_single_profile(ir: &WorkflowIR, profile: &crate::ir::ProfileDef, out: &mut String) {
     let var_name = format!("Profile{}", to_pascal_case(&profile.name));
     let desc = profile.description.as_deref().unwrap_or("");
     let output = match profile.output.unwrap_or(OutputKind::Local) {
@@ -329,11 +302,7 @@ fn generate_single_profile(
                             Executor::Agent => "Agent",
                             Executor::Human => "Human",
                         };
-                        out.push_str(&format!(
-                            "{}: {}, ",
-                            to_pascal_case(&step.action),
-                            exec_str
-                        ));
+                        out.push_str(&format!("{}: {}, ", to_pascal_case(&step.action), exec_str));
                     }
                 }
             }
@@ -385,11 +354,7 @@ fn generate_prompt_structs(out: &mut String) {
     out.push_str("}\n\n");
 }
 
-fn generate_single_prompt(
-    prompt_name: &str,
-    prompt: &crate::prompt::PromptFile,
-    out: &mut String,
-) {
+fn generate_single_prompt(prompt_name: &str, prompt: &crate::prompt::PromptFile, out: &mut String) {
     let var_name = format!("Prompt{}", to_pascal_case(prompt_name));
     out.push_str(&format!("var {} = PromptMeta{{\n", var_name));
     out.push_str(&format!("\tName: \"{}\",\n", prompt_name));
@@ -449,9 +414,7 @@ fn generate_single_prompt(
     out.push_str("}\n\n");
 }
 
-fn collect_actions_with_outcomes<'a>(
-    ir: &'a WorkflowIR,
-) -> Vec<(&'a str, &'a str)> {
+fn collect_actions_with_outcomes(ir: &WorkflowIR) -> Vec<(&str, &str)> {
     ir.states
         .iter()
         .filter_map(|(name, state)| {
@@ -476,15 +439,12 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]
     fn test_generate_go_state_type() {
-        let input =
-            std::fs::read_to_string(fixture_dir().join("workflow.loom"))
-                .unwrap();
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let code = generate(&ir);
@@ -496,9 +456,7 @@ mod tests {
 
     #[test]
     fn test_generate_go_outcome_types() {
-        let input =
-            std::fs::read_to_string(fixture_dir().join("workflow.loom"))
-                .unwrap();
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let code = generate(&ir);
@@ -512,9 +470,7 @@ mod tests {
 
     #[test]
     fn test_generate_go_executor_and_output() {
-        let input =
-            std::fs::read_to_string(fixture_dir().join("workflow.loom"))
-                .unwrap();
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let code = generate(&ir);
@@ -528,9 +484,7 @@ mod tests {
 
     #[test]
     fn test_generate_go_profiles() {
-        let input =
-            std::fs::read_to_string(fixture_dir().join("workflow.loom"))
-                .unwrap();
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let code = generate(&ir);
@@ -541,24 +495,18 @@ mod tests {
 
     #[test]
     fn test_generate_go_apply_fn() {
-        let input =
-            std::fs::read_to_string(fixture_dir().join("workflow.loom"))
-                .unwrap();
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let code = generate(&ir);
 
-        assert!(code.contains(
-            "func Apply(state State, outcome Outcome) (State, error) {"
-        ));
+        assert!(code.contains("func Apply(state State, outcome Outcome) (State, error) {"));
         assert!(code.contains("type Outcome struct {"));
     }
 
     #[test]
     fn test_generate_go_prompt_metadata() {
-        let input =
-            std::fs::read_to_string(fixture_dir().join("workflow.loom"))
-                .unwrap();
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let code = generate(&ir);
@@ -572,16 +520,12 @@ mod tests {
 
     #[test]
     fn test_generate_go_package_header() {
-        let input =
-            std::fs::read_to_string(fixture_dir().join("workflow.loom"))
-                .unwrap();
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let code = generate(&ir);
 
         assert!(code.contains("package workflow"));
-        assert!(code.contains(
-            "// Generated by loom v0.1.0 from knots_sdlc v1"
-        ));
+        assert!(code.contains("// Generated by loom v0.1.0 from knots_sdlc v1"));
     }
 }

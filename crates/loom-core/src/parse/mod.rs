@@ -3,8 +3,8 @@ pub mod ast;
 use pest::Parser;
 use pest_derive::Parser;
 
-use ast::*;
 use crate::error::{LoomError, LoomResult};
+use ast::*;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -12,8 +12,9 @@ pub struct LoomParser;
 
 /// Parse a workflow .loom file into an AST
 pub fn parse_workflow(input: &str) -> LoomResult<Workflow> {
-    let pairs = LoomParser::parse(Rule::file, input)
-        .map_err(|e| LoomError::Parse { message: e.to_string() })?;
+    let pairs = LoomParser::parse(Rule::file, input).map_err(|e| LoomError::Parse {
+        message: e.to_string(),
+    })?;
 
     let file_pair = pairs.into_iter().next().unwrap();
     let workflow_pair = file_pair.into_inner().next().unwrap();
@@ -22,8 +23,9 @@ pub fn parse_workflow(input: &str) -> LoomResult<Workflow> {
 
 /// Parse a profile .loom file into a ProfileDecl
 pub fn parse_profile_file(input: &str) -> LoomResult<ProfileDecl> {
-    let pairs = LoomParser::parse(Rule::profile_file, input)
-        .map_err(|e| LoomError::Parse { message: e.to_string() })?;
+    let pairs = LoomParser::parse(Rule::profile_file, input).map_err(|e| LoomError::Parse {
+        message: e.to_string(),
+    })?;
 
     let file_pair = pairs.into_iter().next().unwrap();
     let profile_pair = file_pair.into_inner().next().unwrap();
@@ -91,7 +93,12 @@ fn build_action(pair: pest::iterators::Pair<Rule>) -> LoomResult<ActionDecl> {
     let action_type = build_action_type(action_type_pair)?;
 
     let prompt_pair = body_inner.next().unwrap();
-    let prompt = prompt_pair.into_inner().next().unwrap().as_str().to_string();
+    let prompt = prompt_pair
+        .into_inner()
+        .next()
+        .unwrap()
+        .as_str()
+        .to_string();
 
     let mut constraints = Vec::new();
     for constraint_pair in body_inner {
@@ -164,7 +171,11 @@ fn build_step(pair: pest::iterators::Pair<Rule>) -> LoomResult<StepDecl> {
     let name = inner.next().unwrap().as_str().to_string();
     let queue = inner.next().unwrap().as_str().to_string();
     let action = inner.next().unwrap().as_str().to_string();
-    Ok(StepDecl { name, queue, action })
+    Ok(StepDecl {
+        name,
+        queue,
+        action,
+    })
 }
 
 fn build_phase(pair: pest::iterators::Pair<Rule>) -> LoomResult<PhaseDecl> {
@@ -224,13 +235,11 @@ fn build_profile(pair: pest::iterators::Pair<Rule>) -> LoomResult<ProfileDecl> {
                             let exec_override = field.into_inner().next().unwrap(); // executor_override
                             let exec_pair = exec_override.into_inner().next().unwrap(); // executor
                             let executor = build_executor(exec_pair);
-                            fields.push(ProfileField::Override(OverrideDecl {
-                                action,
-                                executor,
-                            }));
+                            fields.push(ProfileField::Override(OverrideDecl { action, executor }));
                         }
                         Rule::profile_description => {
-                            let desc = strip_quotes(field_inner.into_inner().next().unwrap().as_str());
+                            let desc =
+                                strip_quotes(field_inner.into_inner().next().unwrap().as_str());
                             fields.push(ProfileField::Description(desc));
                         }
                         _ => unreachable!(),
@@ -404,7 +413,8 @@ mod tests {
 
     #[test]
     fn test_parse_knots_sdlc() {
-        let input = std::fs::read_to_string("../../tests/fixtures/knots_sdlc/workflow.loom").unwrap();
+        let input =
+            std::fs::read_to_string("../../tests/fixtures/knots_sdlc/workflow.loom").unwrap();
         let wf = parse_workflow(&input).unwrap();
         assert_eq!(wf.name, "knots_sdlc");
         assert_eq!(wf.version, 1);
@@ -414,7 +424,9 @@ mod tests {
 
     #[test]
     fn test_parse_profile_file() {
-        let input = std::fs::read_to_string("../../tests/fixtures/knots_sdlc/profiles/semiauto.loom").unwrap();
+        let input =
+            std::fs::read_to_string("../../tests/fixtures/knots_sdlc/profiles/semiauto.loom")
+                .unwrap();
         let profile = parse_profile_file(&input).unwrap();
         assert_eq!(profile.name, "semiauto");
         assert_eq!(profile.display_name, Some("Semi-automatic".to_string()));

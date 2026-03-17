@@ -2,6 +2,12 @@
 name = "loom-cli"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "CLI for compiling Loom workflows into validated typed code"
+readme = "../../README.md"
 
 [[bin]]
 name = "loom"

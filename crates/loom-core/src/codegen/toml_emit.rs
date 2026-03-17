@@ -6,7 +6,10 @@ use crate::prompt::ParamType;
 pub fn emit_toml(ir: &WorkflowIR) -> String {
     let mut out = String::new();
 
-    out.push_str(&format!("[workflow]\nname = \"{}\"\nversion = {}\n", ir.name, ir.version));
+    out.push_str(&format!(
+        "[workflow]\nname = \"{}\"\nversion = {}\n",
+        ir.name, ir.version
+    ));
     if let Some(ref dp) = ir.default_profile {
         out.push_str(&format!("default_profile = \"{}\"\n", dp));
     }
@@ -24,7 +27,14 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
         };
         out.push_str(&format!("kind = \"{}\"\n", kind));
 
-        if let StateDef::Action { action_type, executor, prompt_name, constraints, .. } = state {
+        if let StateDef::Action {
+            action_type,
+            executor,
+            prompt_name,
+            constraints,
+            ..
+        } = state
+        {
             let (at, gk) = match action_type {
                 ActionType::Produce(_) => ("produce", None),
                 ActionType::Gate(kind, _) => ("gate", Some(kind)),
@@ -145,7 +155,10 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
 
         // Params
         for (param_name, param_def) in &prompt.params {
-            out.push_str(&format!("[prompts.{}.params.{}]\n", prompt_name, param_name));
+            out.push_str(&format!(
+                "[prompts.{}.params.{}]\n",
+                prompt_name, param_name
+            ));
             let pt = match param_def.param_type {
                 ParamType::String => "string",
                 ParamType::Int => "int",
@@ -184,8 +197,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     #[test]

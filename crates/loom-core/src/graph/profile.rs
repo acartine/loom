@@ -1,7 +1,7 @@
-use std::collections::HashSet;
 use indexmap::IndexMap;
+use std::collections::HashSet;
 
-use crate::ir::{WorkflowIR, StateDef, StepDef, PhaseDef, ProfileDef};
+use crate::ir::{PhaseDef, ProfileDef, StateDef, StepDef, WorkflowIR};
 use crate::prompt::PromptFile;
 
 /// Extract the subgraph for a specific profile.
@@ -34,7 +34,11 @@ pub fn extract_profile_subgraph(ir: &WorkflowIR, profile_name: &str) -> Option<W
                         let mut state = state.clone();
                         // Apply executor overrides
                         if let Some(&executor) = profile.overrides.get(state.name()) {
-                            if let StateDef::Action { executor: ref mut e, .. } = state {
+                            if let StateDef::Action {
+                                executor: ref mut e,
+                                ..
+                            } = state
+                            {
                                 *e = executor;
                             }
                         }
@@ -96,8 +100,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixture_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/knots_sdlc")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/knots_sdlc")
     }
 
     fn load_ir() -> WorkflowIR {
