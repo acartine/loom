@@ -4,6 +4,9 @@ pub mod config;
 pub mod ir;
 pub mod graph;
 pub mod codegen;
+pub mod sim;
+pub mod diff;
+pub mod compat;
 pub mod error;
 
 use std::path::Path;

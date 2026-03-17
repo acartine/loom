@@ -6,6 +6,7 @@ use super::{build_graph, EdgeKind};
 pub enum RenderFormat {
     Mermaid,
     Dot,
+    Ascii,
 }
 
 /// Render the workflow graph in the specified format
@@ -13,6 +14,7 @@ pub fn render(ir: &WorkflowIR, format: RenderFormat) -> String {
     match format {
         RenderFormat::Mermaid => render_mermaid(ir),
         RenderFormat::Dot => render_dot(ir),
+        RenderFormat::Ascii => render_ascii(ir),
     }
 }
 
@@ -74,6 +76,96 @@ fn render_mermaid(ir: &WorkflowIR) -> String {
     }
 
     out
+}
+
+fn render_ascii(ir: &WorkflowIR) -> String {
+    let graph = build_graph(ir);
+    let mut out = String::new();
+
+    out.push_str(&format!(
+        "=== Workflow: {} v{} ===\n\nStates:\n",
+        ir.name, ir.version
+    ));
+
+    // Group states by type: queues, actions, terminals, escapes
+    let groups: &[(&str, fn(&crate::ir::StateDef) -> bool)] = &[
+        ("Q", crate::ir::StateDef::is_queue),
+        ("A", crate::ir::StateDef::is_action),
+        ("T", crate::ir::StateDef::is_terminal),
+        ("E", crate::ir::StateDef::is_escape),
+    ];
+
+    for &(tag, predicate) in groups {
+        for (name, state) in &ir.states {
+            if !predicate(state) {
+                continue;
+            }
+            let suffix = format_action_suffix(state);
+            out.push_str(&format!(
+                "  [{}] {:<30} \"{}\"{}\n",
+                tag,
+                name,
+                state.display_name(),
+                suffix
+            ));
+        }
+    }
+
+    out.push_str("\nTransitions:\n");
+
+    // Non-wildcard edges first
+    for edge in graph.graph.edge_indices() {
+        let weight = &graph.graph[edge];
+        if matches!(weight, EdgeKind::Wildcard) {
+            continue;
+        }
+        let (src, dst) = graph.graph.edge_endpoints(edge).unwrap();
+        let label = format_edge_label(weight);
+        out.push_str(&format!(
+            "  {} --[{}]--> {}\n",
+            graph.graph[src], label, graph.graph[dst]
+        ));
+    }
+
+    // Wildcard edges (deduplicated by target)
+    for target in &ir.wildcard_targets {
+        out.push_str(&format!("  * --[wildcard]--> {}\n", target));
+    }
+
+    out
+}
+
+fn format_action_suffix(state: &crate::ir::StateDef) -> String {
+    match state {
+        crate::ir::StateDef::Action {
+            action_type,
+            executor,
+            ..
+        } => {
+            let kind = match action_type {
+                crate::parse::ast::ActionType::Produce(_) => "produce",
+                crate::parse::ast::ActionType::Gate(..) => "gate",
+            };
+            let exec = match executor {
+                crate::parse::ast::Executor::Agent => "agent",
+                crate::parse::ast::Executor::Human => "human",
+            };
+            format!(" ({}, {})", kind, exec)
+        }
+        _ => String::new(),
+    }
+}
+
+fn format_edge_label(weight: &EdgeKind) -> String {
+    match weight {
+        EdgeKind::Claim { step } => format!("claim: {}", step),
+        EdgeKind::Outcome { outcome, is_success } => {
+            let kind = if *is_success { "ok" } else { "fail" };
+            format!("{} ({})", outcome, kind)
+        }
+        EdgeKind::PhaseLink { phase } => format!("phase: {}", phase),
+        EdgeKind::Wildcard => "wildcard".to_string(),
+    }
 }
 
 fn render_dot(ir: &WorkflowIR) -> String {
@@ -159,5 +251,30 @@ mod tests {
         let output = render(&ir, RenderFormat::Dot);
         assert!(output.contains("digraph workflow"));
         assert!(output.contains("ready_for_planning"));
+    }
+
+    #[test]
+    fn test_render_ascii() {
+        let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
+        let ast = parse::parse_workflow(&input).unwrap();
+        let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
+        let output = render(&ir, RenderFormat::Ascii);
+
+        // Header
+        assert!(output.contains("=== Workflow: knots_sdlc v1 ==="));
+
+        // States section with type tags
+        assert!(output.contains("[Q] ready_for_planning"));
+        assert!(output.contains("[A] planning"));
+        assert!(output.contains("[T] shipped"));
+        assert!(output.contains("[E] deferred"));
+
+        // Action states show type and executor
+        assert!(output.contains("(produce, agent)"));
+
+        // Transitions section
+        assert!(output.contains("Transitions:"));
+        assert!(output.contains("--[claim:"));
+        assert!(output.contains("--[wildcard]-->"));
     }
 }

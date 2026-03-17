@@ -1,3 +1,5 @@
+pub mod go;
+pub mod python;
 pub mod rust;
 pub mod toml_emit;
 
@@ -8,12 +10,14 @@ use crate::error::LoomResult;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CodegenTarget {
     Rust,
+    Go,
 }
 
 /// Generate code for the given target language
 pub fn generate(ir: &WorkflowIR, target: CodegenTarget) -> LoomResult<String> {
     match target {
         CodegenTarget::Rust => Ok(rust::generate(ir)),
+        CodegenTarget::Go => Ok(go::generate(ir)),
     }
 }
 
