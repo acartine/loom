@@ -569,4 +569,264 @@ Do the thing.
         // s2's action (a2) is produce, but it's used as gate
         assert!(err.iter().any(|e| matches!(e, LoomError::PhaseTypeMismatch { .. })));
     }
+
+    #[test]
+    fn test_unresolved_step_action() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                step s1 { q1 -> nonexistent }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::UnresolvedReference { name, .. } if name == "nonexistent"
+        )));
+    }
+
+    #[test]
+    fn test_step_type_mismatch_action_not_action() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                queue q2 "Q2"
+                step s1 { q1 -> q2 }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::StepTypeMismatch { .. })));
+    }
+
+    #[test]
+    fn test_unresolved_phase_produce_step() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action a1 "A1" { gate review agent prompt a1 }
+                step s1 { q1 -> a1 }
+                phase p1 { produce nonexistent gate s1 }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::UnresolvedReference { name, .. } if name == "nonexistent"
+        )));
+    }
+
+    #[test]
+    fn test_unresolved_phase_gate_step() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action a1 "A1" { produce agent prompt a1 }
+                step s1 { q1 -> a1 }
+                phase p1 { produce s1 gate nonexistent }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::UnresolvedReference { name, .. } if name == "nonexistent"
+        )));
+    }
+
+    #[test]
+    fn test_profile_undefined_phase() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                profile p1 {
+                    phases [nonexistent_phase]
+                    output local
+                }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::ProfileError { .. })));
+    }
+
+    #[test]
+    fn test_unresolved_wildcard_target() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                * -> nonexistent
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::UnresolvedReference { name, .. } if name == "nonexistent"
+        )));
+    }
+
+    #[test]
+    fn test_invalid_outcome_target() {
+        let tmp = std::env::temp_dir().join("loom_test_invalid_outcome_target");
+        let prompts_dir = tmp.join("prompts");
+        let _ = std::fs::create_dir_all(&prompts_dir);
+        std::fs::write(prompts_dir.join("work.md"), r#"---
+accept: []
+success:
+  done: nonexistent_state
+failure: {}
+params: {}
+---
+Do work.
+"#).unwrap();
+
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action work "Work" { produce agent prompt work }
+                step s1 { q1 -> work }
+            }
+        "#;
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        let err = lower(&ast, &tmp).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::InvalidOutcomeTarget { .. })));
+    }
+
+    #[test]
+    fn test_undeclared_body_param() {
+        let tmp = std::env::temp_dir().join("loom_test_undeclared_body_param");
+        let prompts_dir = tmp.join("prompts");
+        let _ = std::fs::create_dir_all(&prompts_dir);
+        std::fs::write(prompts_dir.join("work.md"), r#"---
+accept: []
+success:
+  done: done
+failure: {}
+params: {}
+---
+Do the {{ unknown }} thing.
+"#).unwrap();
+
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action work "Work" { produce agent prompt work }
+                terminal done
+                step s1 { q1 -> work }
+            }
+        "#;
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        let err = lower(&ast, &tmp).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::UndeclaredParam { param, .. } if param == "unknown"
+        )));
+    }
+
+    #[test]
+    fn test_bool_param_bad_default() {
+        let tmp = std::env::temp_dir().join("loom_test_bool_param_bad_default");
+        let prompts_dir = tmp.join("prompts");
+        let _ = std::fs::create_dir_all(&prompts_dir);
+        std::fs::write(prompts_dir.join("work.md"), r#"---
+accept: []
+success:
+  done: done
+failure: {}
+params:
+  flag:
+    type: bool
+    default: "yes"
+---
+Use {{ flag }}.
+"#).unwrap();
+
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action work "Work" { produce agent prompt work }
+                terminal done
+                step s1 { q1 -> work }
+            }
+        "#;
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        let err = lower(&ast, &tmp).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::ParamValidation { param, .. } if param == "flag"
+        )));
+    }
+
+    #[test]
+    fn test_int_param_bad_default() {
+        let tmp = std::env::temp_dir().join("loom_test_int_param_bad_default");
+        let prompts_dir = tmp.join("prompts");
+        let _ = std::fs::create_dir_all(&prompts_dir);
+        std::fs::write(prompts_dir.join("work.md"), r#"---
+accept: []
+success:
+  done: done
+failure: {}
+params:
+  count:
+    type: int
+    default: "abc"
+---
+Count {{ count }}.
+"#).unwrap();
+
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action work "Work" { produce agent prompt work }
+                terminal done
+                step s1 { q1 -> work }
+            }
+        "#;
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        let err = lower(&ast, &tmp).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::ParamValidation { param, .. } if param == "count"
+        )));
+    }
+
+    #[test]
+    fn test_enum_param_default_not_in_values() {
+        let tmp = std::env::temp_dir().join("loom_test_enum_param_default_not_in_values");
+        let prompts_dir = tmp.join("prompts");
+        let _ = std::fs::create_dir_all(&prompts_dir);
+        std::fs::write(prompts_dir.join("work.md"), r#"---
+accept: []
+success:
+  done: done
+failure: {}
+params:
+  color:
+    type: enum
+    values: [red, blue]
+    default: "green"
+---
+Color {{ color }}.
+"#).unwrap();
+
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action work "Work" { produce agent prompt work }
+                terminal done
+                step s1 { q1 -> work }
+            }
+        "#;
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        let err = lower(&ast, &tmp).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::ParamValidation { param, .. } if param == "color"
+        )));
+    }
+
+    #[test]
+    fn test_duplicate_profile() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                profile p1 { phases [] output local }
+                profile p1 { phases [] output local }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(
+            e, LoomError::DuplicateIdentifier { name } if name == "p1"
+        )));
+    }
 }

@@ -1,5 +1,7 @@
 # Loom
 
+![Coverage: 92%](https://img.shields.io/badge/coverage-92%25-brightgreen)
+
 **A language and compiler for agentic workflows.**
 
 Loom lets you define complex agent workflows as structured, typed programs — then validates them at compile time and generates typed code. No runtime surprises. No implicit routing. No dead states hiding in production.

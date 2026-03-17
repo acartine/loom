@@ -81,3 +81,30 @@ pub fn validate_workflow(workflow_dir: &Path) -> Result<(WorkflowIR, Diagnostics
 
     Ok((ir, diag))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn fixture_dir() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/knots_sdlc")
+    }
+
+    #[test]
+    fn test_load_workflow() {
+        let result = load_workflow(&fixture_dir());
+        let (ir, _diag) = result.expect("load_workflow should succeed");
+        assert_eq!(ir.name, "knots_sdlc");
+    }
+
+    #[test]
+    fn test_validate_workflow() {
+        let result = validate_workflow(&fixture_dir());
+        let (ir, diag) = result.expect("validate_workflow should succeed");
+        assert_eq!(ir.name, "knots_sdlc");
+        assert!(diag.errors.is_empty(), "expected no errors, got: {:?}", diag.errors);
+        assert!(!diag.warnings.is_empty(), "expected warnings but got none");
+    }
+}

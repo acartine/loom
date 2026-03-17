@@ -16,3 +16,23 @@ pub fn generate(ir: &WorkflowIR, target: CodegenTarget) -> LoomResult<String> {
         CodegenTarget::Rust => Ok(rust::generate(ir)),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn fixture_dir() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/knots_sdlc")
+    }
+
+    #[test]
+    fn test_generate_rust_target() {
+        let (ir, _diag) = crate::load_workflow(&fixture_dir())
+            .expect("load_workflow should succeed");
+        let output = generate(&ir, CodegenTarget::Rust)
+            .expect("generate should succeed");
+        assert!(output.contains("pub enum State"), "expected 'pub enum State' in output");
+    }
+}
