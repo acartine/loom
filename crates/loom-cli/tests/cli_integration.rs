@@ -194,7 +194,28 @@ fn test_init_and_validate() {
 }
 
 #[test]
-fn test_build_unsupported_lang() {
+fn test_build_go() {
+    let output = Command::new(loom_bin())
+        .args(["build", "tests/fixtures/knots_sdlc", "--lang", "go"])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom");
+
+    assert!(
+        output.status.success(),
+        "build --lang go should succeed, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("type State int"),
+        "expected 'type State int' in Go output"
+    );
+}
+
+#[test]
+fn test_build_python() {
     let output = Command::new(loom_bin())
         .args(["build", "tests/fixtures/knots_sdlc", "--lang", "python"])
         .current_dir(workspace_root())
@@ -202,8 +223,87 @@ fn test_build_unsupported_lang() {
         .expect("failed to execute loom");
 
     assert!(
+        output.status.success(),
+        "build --lang python should succeed, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("class State(Enum)"),
+        "expected 'class State(Enum)' in Python output"
+    );
+}
+
+#[test]
+fn test_build_unsupported_lang() {
+    let output = Command::new(loom_bin())
+        .args(["build", "tests/fixtures/knots_sdlc", "--lang", "java"])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom");
+
+    assert!(
         !output.status.success(),
-        "build --lang python should fail"
+        "build --lang java should fail"
+    );
+}
+
+#[test]
+fn test_graph_ascii() {
+    let output = Command::new(loom_bin())
+        .args(["graph", "tests/fixtures/knots_sdlc", "--format", "ascii"])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom");
+
+    assert!(
+        output.status.success(),
+        "graph --format ascii should succeed, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("States:") && stdout.contains("Transitions:"),
+        "expected ASCII graph output"
+    );
+}
+
+#[test]
+fn test_diff() {
+    let output = Command::new(loom_bin())
+        .args(["diff", "tests/fixtures/knots_sdlc", "tests/fixtures/knots_sdlc_v2"])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom");
+
+    assert!(
+        output.status.success(),
+        "diff should succeed, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("+") || stdout.contains("-") || stdout.contains("~"),
+        "expected diff markers in output"
+    );
+}
+
+#[test]
+fn test_check_compat() {
+    let output = Command::new(loom_bin())
+        .args(["check-compat", "tests/fixtures/knots_sdlc", "tests/fixtures/knots_sdlc_v2"])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom");
+
+    // Should exit non-zero because there are breaking changes
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("breaking") || stdout.contains("Breaking"),
+        "expected breaking changes in output"
     );
 }
 

@@ -6,6 +6,7 @@ use loom_core::codegen::toml_emit;
 pub enum EmitFormat {
     Rust,
     Go,
+    Python,
     Toml,
 }
 
@@ -37,6 +38,8 @@ pub fn run(dir: &Path, format: EmitFormat) -> miette::Result<()> {
         EmitFormat::Rust => codegen::generate(&ir, CodegenTarget::Rust)
             .map_err(|e| miette::miette!("{}", e))?,
         EmitFormat::Go => codegen::generate(&ir, CodegenTarget::Go)
+            .map_err(|e| miette::miette!("{}", e))?,
+        EmitFormat::Python => codegen::generate(&ir, CodegenTarget::Python)
             .map_err(|e| miette::miette!("{}", e))?,
         EmitFormat::Toml => toml_emit::emit_toml(&ir),
     };

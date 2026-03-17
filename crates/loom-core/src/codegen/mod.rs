@@ -11,6 +11,7 @@ use crate::error::LoomResult;
 pub enum CodegenTarget {
     Rust,
     Go,
+    Python,
 }
 
 /// Generate code for the given target language
@@ -18,6 +19,7 @@ pub fn generate(ir: &WorkflowIR, target: CodegenTarget) -> LoomResult<String> {
     match target {
         CodegenTarget::Rust => Ok(rust::generate(ir)),
         CodegenTarget::Go => Ok(go::generate(ir)),
+        CodegenTarget::Python => Ok(python::generate(ir)),
     }
 }
 

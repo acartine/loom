@@ -103,7 +103,8 @@ fn main() -> miette::Result<()> {
                 match lang.as_str() {
                     "rust" => commands::build::EmitFormat::Rust,
                     "go" => commands::build::EmitFormat::Go,
-                    _ => return Err(miette::miette!("unsupported language: {} (supported: rust, go)", lang)),
+                    "python" => commands::build::EmitFormat::Python,
+                    _ => return Err(miette::miette!("unsupported language: {} (supported: rust, go, python)", lang)),
                 }
             };
             commands::build::run(&dir, format)

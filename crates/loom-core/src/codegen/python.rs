@@ -3,7 +3,6 @@ use crate::parse::ast::{Executor, OutputKind};
 use crate::prompt::ParamType;
 
 /// Generate Python code from the workflow IR
-#[allow(dead_code)]
 pub fn generate(ir: &WorkflowIR) -> String {
     let mut out = String::new();
 

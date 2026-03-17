@@ -96,11 +96,14 @@ Every profile is validated as an independent graph. A workflow can define phases
 ## CLI
 
 ```bash
-loom init <name>               # scaffold a new workflow
-loom validate [dir]            # full validation pipeline
-loom build [--lang rust]       # generate typed code
-loom build --emit toml         # TOML interchange format
-loom graph [--profile <name>]  # mermaid or DOT output
+loom init <name>                    # scaffold a new workflow
+loom validate [dir]                 # full validation pipeline
+loom build [--lang rust|go|python]  # generate typed code
+loom build --emit toml              # TOML interchange format
+loom graph [--profile <name>]       # mermaid, DOT, or ASCII output
+loom sim [--profile <name>]         # interactive transition simulator
+loom diff <v1-dir> <v2-dir>         # diff two workflow versions
+loom check-compat <old> <new>       # backward compatibility check
 ```
 
 ### Quick start
@@ -154,7 +157,7 @@ The compiler pipeline:
         |
      [ validate ]   12 error checks + 5 warning checks, per-profile
         |
-     [ codegen ]    IR -> Rust / TOML
+     [ codegen ]    IR -> Rust / Go / Python / TOML
 ```
 
 ## Spec
@@ -172,20 +175,21 @@ The full language specification lives in [`schema.md`](./schema.md). It covers:
 
 ## Status
 
-The core compiler is implemented and working. The reference Knots SDLC workflow (15 states, 6 steps, 3 phases, 6 profiles) parses, validates, and generates compilable Rust code.
+Feature complete against the language spec. The reference Knots SDLC workflow (15 states, 6 steps, 3 phases, 6 profiles) parses, validates, and generates compilable code in all three target languages.
 
 **Implemented:**
 - Full PEG parser for `.loom` files and profile files
 - YAML frontmatter prompt parser with parameter extraction
 - IR lowering with two-phase name resolution
-- Graph construction with implicit phase transitions and wildcard expansion
+- Graph construction with explicit outcome routing and wildcard expansion
 - 12 error checks + 5 warning checks with per-profile subgraph validation
-- Rust code generation (state enums, outcome enums, transition function, profiles, prompt metadata)
+- Code generation: Rust, Go, Python
 - TOML interchange format
-- Mermaid and DOT graph output
-- CLI: `init`, `validate`, `build`, `graph`
-
-**Coming next:** Go and Python codegen, interactive simulator, workflow diff, backward compatibility checking. See [PHASE_7-11.md](./PHASE_7-11.md).
+- Graph output: Mermaid, DOT, ASCII
+- Interactive transition simulator
+- Structural diff between workflow versions
+- Backward compatibility checking with migration map emission
+- CLI: `init`, `validate`, `build`, `graph`, `sim`, `diff`, `check-compat`
 
 ## License
 
