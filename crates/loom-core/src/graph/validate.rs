@@ -205,6 +205,100 @@ mod tests {
             .join("../../tests/fixtures/knots_sdlc")
     }
 
+    use indexmap::IndexMap;
+    use crate::ir::{PhaseDef, ProfileDef, StepDef};
+    use crate::prompt::PromptFile;
+    use crate::parse::ast::{ActionType, Executor};
+
+    /// Regression test: a produce action with no success outcomes must be
+    /// rejected at validation time. Without this check the graph and codegen
+    /// disagree — the graph could show an implicit phase link while apply()
+    /// has no success variant to reach the gate queue.
+    #[test]
+    fn test_produce_no_success_is_error() {
+        let mut states = IndexMap::new();
+        states.insert("q1".into(), StateDef::Queue {
+            name: "q1".into(), display_name: "Q1".into(),
+        });
+        states.insert("a1".into(), StateDef::Action {
+            name: "a1".into(),
+            display_name: "A1".into(),
+            action_type: ActionType::Produce(Executor::Agent),
+            prompt_name: "a1_prompt".into(),
+            constraints: vec![],
+            executor: Executor::Agent,
+        });
+        states.insert("q2".into(), StateDef::Queue {
+            name: "q2".into(), display_name: "Q2".into(),
+        });
+        states.insert("a2".into(), StateDef::Action {
+            name: "a2".into(),
+            display_name: "A2".into(),
+            action_type: ActionType::Gate(crate::parse::ast::GateKind::Approve, Executor::Human),
+            prompt_name: "a2_prompt".into(),
+            constraints: vec![],
+            executor: Executor::Human,
+        });
+        states.insert("done".into(), StateDef::Terminal {
+            name: "done".into(), display_name: "Done".into(),
+        });
+
+        let mut steps = IndexMap::new();
+        steps.insert("s1".into(), StepDef { name: "s1".into(), queue: "q1".into(), action: "a1".into() });
+        steps.insert("s2".into(), StepDef { name: "s2".into(), queue: "q2".into(), action: "a2".into() });
+
+        let mut phases = IndexMap::new();
+        phases.insert("p1".into(), PhaseDef { name: "p1".into(), produce_step: "s1".into(), gate_step: "s2".into() });
+
+        let mut profiles = IndexMap::new();
+        profiles.insert("default".into(), ProfileDef {
+            name: "default".into(),
+            display_name: None,
+            description: None,
+            phases: vec!["p1".into()],
+            output: None,
+            overrides: IndexMap::new(),
+        });
+
+        let mut prompts = IndexMap::new();
+        // Produce prompt with NO success outcomes — this is the bug trigger
+        prompts.insert("a1_prompt".into(), PromptFile {
+            accept: vec![],
+            success: IndexMap::new(),
+            failure: IndexMap::from([("fail".into(), "q1".into())]),
+            params: IndexMap::new(),
+            body: String::new(),
+            body_params: vec![],
+        });
+        prompts.insert("a2_prompt".into(), PromptFile {
+            accept: vec![],
+            success: IndexMap::from([("approved".into(), "done".into())]),
+            failure: IndexMap::from([("rejected".into(), "q1".into())]),
+            params: IndexMap::new(),
+            body: String::new(),
+            body_params: vec![],
+        });
+
+        let ir = WorkflowIR {
+            name: "test".into(),
+            version: 1,
+            default_profile: Some("default".into()),
+            states,
+            steps,
+            phases,
+            profiles,
+            wildcard_targets: vec![],
+            prompts,
+        };
+
+        let diag = validate(&ir);
+        let has_produce_no_success = diag.errors.iter().any(|e| {
+            matches!(e, LoomError::ProduceNoSuccess { action } if action == "a1")
+        });
+        assert!(has_produce_no_success,
+            "expected ProduceNoSuccess error for 'a1', got errors: {:?}", diag.errors);
+    }
+
     #[test]
     fn test_validate_knots_sdlc() {
         let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
