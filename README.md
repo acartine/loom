@@ -1,166 +1,190 @@
 # Loom
 
-Loom is a **workflow language and compiler** for agentic work.
+**A language and compiler for agentic workflows.**
 
-It is not a workflow engine.
-It does not execute workflows.
-It defines workflows, validates them, and compiles them into typed artifacts that a runtime system — such as **Knots** — can consume.
+Loom lets you define complex agent workflows as structured, typed programs — then validates them at compile time and generates code in Rust, Go, or Python. No runtime surprises. No implicit routing. No dead states hiding in production.
 
-**Short version:** Loom authors workflows. Knots runs them.
-
-## Why Loom exists
-
-A lot of workflow logic ends up in bad places:
-- hardcoded state machines
-- prompt strings buried in code
-- implicit routing conventions
-- runtime checks that happen too late
-- brittle transitions that are easy to break and hard to inspect
-
-Loom exists to turn workflow definition into a first-class artifact.
-
-A workflow should be:
-- explicit
-- typed
-- validated before runtime
-- inspectable by humans
-- safe to evolve
-
-## Core idea
-
-Loom treats a workflow as a small program, not a bag of configuration.
-
-A Loom workflow defines:
-- states
-- steps
-- phases
-- profiles
-- prompts
-- outcome routing
-
-Prompts are structured documents, not just strings. Each prompt can declare:
-- acceptance criteria
-- success outcomes
-- failure outcomes
-- typed parameters
-- a markdown body
-
-That means routing behavior lives with the action that produces it.
-
-## Current shape of the project
-
-Right now this repo is centered on the language design itself.
-
-The main artifact is:
-- [`schema.md`](./schema.md) — the current Loom language specification
-
-That spec defines:
-- the file/package structure
-- the `.loom` grammar
-- prompt file structure
-- profile selection and overrides
-- compiler semantics
-- graph validation rules
-- code generation targets
-- CLI direction
-- a reference Knots SDLC workflow
-
-## Why Loom is separate from Knots
-
-Knots should stay lean.
-
-Knots should not own:
-- workflow authoring UX
-- graph analysis
-- prompt routing design
-- compatibility reasoning
-- workflow package validation
-
-Knots should consume a trusted compiled workflow artifact.
-
-Loom should own:
-- language design
-- workflow authoring
-- compile-time validation
-- profile resolution
-- code generation
-- interchange/export formats
-
-In other words:
-- **Loom is the authoring/compiler layer**
-- **Knots is the runtime layer**
-
-## Design highlights
-
-### Workflow packages, not giant files
-A workflow is a directory with:
-- `workflow.loom`
-- `loom.toml`
-- `prompts/*.md`
-- `profiles/*.loom`
-
-This keeps prompts and profiles first-class.
-
-### Prompts own routing
-A key Loom idea is that **the prompt is the routing table**.
-
-Prompt frontmatter defines outcomes and their target states.
-That keeps edge behavior close to the action instead of scattering it through runtime code.
-
-### Profiles are subgraphs
-Profiles are not patches over a default workflow.
-They select phases and optionally override ownership.
-
-That makes it easy to represent modes like:
-- autopilot
-- semiauto
-- PR-based flows
-- no-planning variants
-
-### Compile-time graph validation
-Loom is designed to catch workflow mistakes before runtime, including:
-- dead states
-- unreachable terminals
-- missing prompts
-- dangling outcome targets
-- invalid profile overrides
-- bad phase composition
-- profile-specific graph failures
-
-## Intended CLI
-
-The spec currently describes a CLI along these lines:
-
-```bash
-loom init <name>
-loom validate
-loom build [--lang <target>]
-loom build --emit toml
-loom graph [--profile <name>]
-loom sim <profile>
-loom diff <v1-dir> <v2-dir>
-loom check-compat <old> <new>
+```
+loom validate    # catch every mistake before anything runs
+loom build       # generate typed code from your workflow
+loom graph       # visualize the full state machine
 ```
 
-Some of this is still design direction rather than finished implementation.
+## The problem
+
+Agent workflows today are a mess:
+
+- State machines hardcoded across multiple files
+- Prompt strings buried in application code
+- Routing logic scattered through runtime handlers
+- Transitions that only fail in production
+- No way to know if a change breaks existing flows
+
+When an agent workflow is 15 states deep with 6 different execution profiles, you need a compiler — not a config file.
+
+## What Loom does
+
+Loom treats a workflow as a **typed program**, not a bag of YAML.
+
+You write `.loom` files that declare states, steps, phases, and profiles. Prompts live in markdown files with structured frontmatter that defines outcome routing. The compiler validates the entire graph, resolves every reference, and generates self-contained code.
+
+```
+knots_sdlc/
+  workflow.loom       # states, steps, phases, profiles
+  loom.toml           # package metadata
+  prompts/
+    planning.md       # prompt + outcome routing
+    plan_review.md
+    implementation.md
+    ...
+  profiles/
+    autopilot.loom    # full agent autonomy
+    semiauto.loom     # human-gated reviews
+```
+
+### Prompts own routing
+
+The prompt is the routing table. Each prompt declares its own outcomes and where they lead:
+
+```yaml
+---
+success:
+  plan_complete: ready_for_plan_review
+failure:
+  insufficient_context: ready_for_planning
+  out_of_scope: ready_for_planning
+---
+```
+
+This keeps transition logic next to the action that produces it, not scattered through runtime code.
+
+### Profiles are subgraphs
+
+Profiles select which phases are active and override who executes each action. They're not patches on a default — they're independent subgraphs, validated independently.
+
+```
+profile autopilot "Autopilot" {
+    phases [planning_phase, implementation_phase, shipment_phase]
+    output remote_main
+}
+
+profile semiauto "Semi-automatic" {
+    phases [planning_phase, implementation_phase, shipment_phase]
+    output remote_main
+    override plan_review { executor human }
+    override implementation_review { executor human }
+}
+```
+
+### Compile-time validation
+
+The compiler catches mistakes that would otherwise surface at runtime:
+
+- Dead states with no inbound transitions
+- States that can never reach a terminal
+- Missing or orphaned prompt files
+- Outcome targets that don't exist
+- Prompt parameters referenced but not declared
+- Invalid profile overrides
+- Phase composition errors
+- Per-profile subgraph validation
+
+Every profile is validated as an independent graph. A workflow can define phases that only make sense in combination — the compiler checks each profile's view of the world separately.
+
+## CLI
+
+```bash
+loom init <name>               # scaffold a new workflow
+loom validate [dir]            # full validation pipeline
+loom build [--lang rust]       # generate typed code
+loom build --emit toml         # TOML interchange format
+loom graph [--profile <name>]  # mermaid or DOT output
+```
+
+### Quick start
+
+```bash
+cargo install --path crates/loom-cli
+
+# Create a new workflow
+loom init my_workflow
+cd my_workflow
+
+# Validate it
+loom validate
+
+# Generate Rust code
+loom build --lang rust > src/workflow.rs
+
+# Visualize the graph
+loom graph --format mermaid
+```
+
+## Code generation
+
+`loom build` produces self-contained code with no runtime dependency on Loom:
+
+- **State enum** with all workflow states
+- **Outcome enums** per action with `target()` and `is_success()` methods
+- **Transition function** `apply(state, outcome) -> Result<State>`
+- **Profile constants** with phase lists, output kinds, and executor maps
+- **Prompt metadata** including acceptance criteria, typed parameters, and outcome routing
+
+The generated code compiles on its own. Your runtime system consumes it directly.
+
+## Architecture
+
+Loom is a Rust workspace with two crates:
+
+- **`loom-core`** — library: PEG parser, AST, IR with two-phase name resolution, petgraph-based graph analysis, validation, codegen
+- **`loom-cli`** — binary: the `loom` command
+
+The compiler pipeline:
+
+```
+.loom files + prompts/*.md + loom.toml
+        |
+     [ parse ]      PEG grammar -> AST
+        |
+     [ lower ]      AST -> IR (name resolution, prompt loading)
+        |
+     [ graph ]      IR -> petgraph (implicit transitions, wildcards)
+        |
+     [ validate ]   12 error checks + 5 warning checks, per-profile
+        |
+     [ codegen ]    IR -> Rust / TOML
+```
+
+## Spec
+
+The full language specification lives in [`schema.md`](./schema.md). It covers:
+
+- File and package structure
+- The `.loom` PEG grammar
+- Prompt frontmatter schema
+- Profile selection and overrides
+- Compiler semantics and implicit transitions
+- Graph validation rules
+- Code generation contracts
+- A complete reference workflow (Knots SDLC with 6 profiles)
 
 ## Status
 
-This project is currently in the **language/specification phase**.
+The core compiler is implemented and working. The reference Knots SDLC workflow (15 states, 6 steps, 3 phases, 6 profiles) parses, validates, and generates compilable Rust code.
 
-The repo is intentionally light right now because the most important thing to get right first is the model:
-- what a workflow is
-- how prompts route outcomes
-- how profiles carve out subgraphs
-- what the compiler guarantees
-- what runtime consumers should be able to trust
+**Implemented:**
+- Full PEG parser for `.loom` files and profile files
+- YAML frontmatter prompt parser with parameter extraction
+- IR lowering with two-phase name resolution
+- Graph construction with implicit phase transitions and wildcard expansion
+- 12 error checks + 5 warning checks with per-profile subgraph validation
+- Rust code generation (state enums, outcome enums, transition function, profiles, prompt metadata)
+- TOML interchange format
+- Mermaid and DOT graph output
+- CLI: `init`, `validate`, `build`, `graph`
 
-## Read next
+**Coming next:** Go and Python codegen, interactive simulator, workflow diff, backward compatibility checking. See [PHASE_7-11.md](./PHASE_7-11.md).
 
-Start here:
-- [`schema.md`](./schema.md)
+## License
 
-If you want the shortest possible framing:
-
-> Loom is a language and compiler for authored agent workflows.
-> It lets you define the workflow once, validate it properly, and hand a typed result to systems like Knots.
+MIT

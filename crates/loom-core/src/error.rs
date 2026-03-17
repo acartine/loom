@@ -52,6 +52,13 @@ pub enum LoomError {
         param: String,
     },
 
+    #[error("Parameter validation: {message}")]
+    ParamValidation {
+        prompt: String,
+        param: String,
+        message: String,
+    },
+
     #[error("Dead state: '{name}' has no inbound transitions")]
     DeadState {
         name: String,
@@ -67,6 +74,12 @@ pub enum LoomError {
         message: String,
     },
 
+    #[error("Profile validation: profile '{profile}': {message}")]
+    ProfileValidation {
+        profile: String,
+        message: String,
+    },
+
     #[error("Override validity: override references action '{action}' not in profile's phases")]
     InvalidOverride {
         action: String,
@@ -74,6 +87,11 @@ pub enum LoomError {
 
     #[error("Escape reachability: escape state '{name}' has no path back to the workflow")]
     EscapeUnreachable {
+        name: String,
+    },
+
+    #[error("Config: default_profile '{name}' is not defined in the workflow")]
+    InvalidDefaultProfile {
         name: String,
     },
 

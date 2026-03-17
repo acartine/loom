@@ -86,8 +86,9 @@ pub fn build_graph(ir: &WorkflowIR) -> WorkflowGraph {
         }
     }
 
-    // Add phase links: produce action success -> gate queue
-    // Only when the produce action's success outcomes don't explicitly target elsewhere
+    // Add phase links: produce action success -> gate queue (implicit)
+    // Per spec 3.2: if a produce action's success outcomes don't already target
+    // the gate queue, the compiler generates an implicit phase link edge.
     for phase in ir.phases.values() {
         if let (Some(produce_step), Some(gate_step)) = (
             ir.steps.get(&phase.produce_step),
@@ -96,18 +97,22 @@ pub fn build_graph(ir: &WorkflowIR) -> WorkflowGraph {
             let produce_action = &produce_step.action;
             let gate_queue = &gate_step.queue;
 
-            // Check if any success outcome already targets the gate queue
-            // Phase links are implicit - only added if not explicitly routed
             if let Some(state) = ir.states.get(produce_action) {
                 if let crate::ir::StateDef::Action { prompt_name, .. } = state {
                     if let Some(prompt) = ir.prompts.get(prompt_name) {
+                        // Check if any success outcome already routes to the gate queue
                         let already_routed = prompt.success.values()
                             .any(|target| target == gate_queue);
                         if !already_routed {
-                            // The produce action's success outcomes go to the gate queue
-                            // This is handled by the prompt outcomes already in knots_sdlc
-                            // since plan_complete -> ready_for_plan_review (which IS the gate queue)
-                            // Phase links are only for cases where the prompt doesn't specify
+                            // Add implicit phase link from produce action to gate queue
+                            if let (Some(&action_idx), Some(&queue_idx)) = (
+                                node_indices.get(produce_action),
+                                node_indices.get(gate_queue),
+                            ) {
+                                graph.add_edge(action_idx, queue_idx, EdgeKind::PhaseLink {
+                                    phase: phase.name.clone(),
+                                });
+                            }
                         }
                     }
                 }

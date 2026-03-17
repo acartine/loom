@@ -78,6 +78,7 @@ pub fn extract_profile_subgraph(ir: &WorkflowIR, profile_name: &str) -> Option<W
     Some(WorkflowIR {
         name: ir.name.clone(),
         version: ir.version,
+        default_profile: ir.default_profile.clone(),
         states,
         steps,
         phases,

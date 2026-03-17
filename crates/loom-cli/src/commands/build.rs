@@ -9,7 +9,8 @@ pub enum EmitFormat {
 }
 
 pub fn run(dir: &Path, format: EmitFormat) -> miette::Result<()> {
-    let (ir, diag) = loom_core::load_workflow(dir)
+    // Build runs full validation — loom is a validating compiler
+    let (ir, diag) = loom_core::validate_workflow(dir)
         .map_err(|errors| {
             let msgs: Vec<String> = errors.iter().map(|e| e.to_string()).collect();
             miette::miette!("failed to load workflow:\n{}", msgs.join("\n"))
@@ -18,6 +19,17 @@ pub fn run(dir: &Path, format: EmitFormat) -> miette::Result<()> {
     // Print warnings
     for warning in &diag.warnings {
         eprintln!("{}", warning);
+    }
+
+    // Refuse to emit artifacts if validation failed
+    if diag.has_errors() {
+        for err in &diag.errors {
+            eprintln!("error: {}", err);
+        }
+        return Err(miette::miette!(
+            "refusing to build: {} validation error(s)",
+            diag.errors.len()
+        ));
     }
 
     let output = match format {

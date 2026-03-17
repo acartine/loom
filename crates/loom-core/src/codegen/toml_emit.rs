@@ -1,11 +1,16 @@
 use crate::ir::{StateDef, WorkflowIR};
 use crate::parse::ast::{ActionType, Executor, GateKind, OutputKind};
+use crate::prompt::ParamType;
 
 /// Emit the workflow IR as a TOML interchange format
 pub fn emit_toml(ir: &WorkflowIR) -> String {
     let mut out = String::new();
 
-    out.push_str(&format!("[workflow]\nname = \"{}\"\nversion = {}\n\n", ir.name, ir.version));
+    out.push_str(&format!("[workflow]\nname = \"{}\"\nversion = {}\n", ir.name, ir.version));
+    if let Some(ref dp) = ir.default_profile {
+        out.push_str(&format!("default_profile = \"{}\"\n", dp));
+    }
+    out.push('\n');
 
     // States
     for (name, state) in &ir.states {
@@ -104,7 +109,7 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
         out.push('\n');
     }
 
-    // Outcomes
+    // Prompts with full metadata
     for (prompt_name, prompt) in &ir.prompts {
         out.push_str(&format!("[prompts.{}]\n", prompt_name));
         out.push_str("accept = [");
@@ -126,6 +131,34 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
                 out.push_str(&format!("{} = \"{}\"\n", outcome, target));
             }
         }
+
+        // Params
+        for (param_name, param_def) in &prompt.params {
+            out.push_str(&format!("[prompts.{}.params.{}]\n", prompt_name, param_name));
+            let pt = match param_def.param_type {
+                ParamType::String => "string",
+                ParamType::Int => "int",
+                ParamType::Bool => "bool",
+                ParamType::Enum => "enum",
+            };
+            out.push_str(&format!("type = \"{}\"\n", pt));
+            out.push_str(&format!("required = {}\n", param_def.required));
+            if !param_def.values.is_empty() {
+                out.push_str("values = [");
+                for v in &param_def.values {
+                    out.push_str(&format!("\"{}\", ", v));
+                }
+                out.push_str("]\n");
+            }
+            if let Some(ref default) = param_def.default {
+                out.push_str(&format!("default = \"{}\"\n", default));
+            }
+            if let Some(ref desc) = param_def.description {
+                let escaped = desc.replace('"', "\\\"");
+                out.push_str(&format!("description = \"{}\"\n", escaped));
+            }
+        }
+
         out.push('\n');
     }
 
@@ -155,5 +188,8 @@ mod tests {
         assert!(toml_out.contains("name = \"knots_sdlc\""));
         assert!(toml_out.contains("[states.ready_for_planning]"));
         assert!(toml_out.contains("[profiles.autopilot]"));
+        // Prompt params
+        assert!(toml_out.contains("[prompts.planning.params.complexity]"));
+        assert!(toml_out.contains("type = \"enum\""));
     }
 }

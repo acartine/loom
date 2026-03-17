@@ -9,9 +9,19 @@ use super::*;
 
 /// Lower an AST workflow into the IR.
 /// `workflow_dir` is the directory containing the workflow files (for resolving includes/prompts).
+/// `default_profile` is from loom.toml config.
 pub fn lower(
     ast: &Workflow,
     workflow_dir: &Path,
+) -> Result<(WorkflowIR, Diagnostics), Vec<LoomError>> {
+    lower_with_config(ast, workflow_dir, None)
+}
+
+/// Lower with optional config metadata.
+pub fn lower_with_config(
+    ast: &Workflow,
+    workflow_dir: &Path,
+    default_profile: Option<String>,
 ) -> Result<(WorkflowIR, Diagnostics), Vec<LoomError>> {
     let mut diag = Diagnostics::new();
     let mut states: IndexMap<String, StateDef> = IndexMap::new();
@@ -276,6 +286,73 @@ pub fn lower(
                 });
             }
         }
+
+        // Semantic validation of prompt parameters
+        for (param_name, param_def) in &pf.params {
+            // Enum params must have values
+            if param_def.param_type == crate::prompt::ParamType::Enum && param_def.values.is_empty() {
+                diag.error(LoomError::ParamValidation {
+                    prompt: prompt_name.clone(),
+                    param: param_name.clone(),
+                    message: "enum parameter must have 'values' list".to_string(),
+                });
+            }
+
+            // Default must be in enum values
+            if param_def.param_type == crate::prompt::ParamType::Enum {
+                if let Some(ref default) = param_def.default {
+                    if !param_def.values.contains(default) {
+                        diag.error(LoomError::ParamValidation {
+                            prompt: prompt_name.clone(),
+                            param: param_name.clone(),
+                            message: format!(
+                                "default '{}' is not in enum values {:?}",
+                                default, param_def.values
+                            ),
+                        });
+                    }
+                }
+            }
+
+            // Bool defaults must be "true" or "false"
+            if param_def.param_type == crate::prompt::ParamType::Bool {
+                if let Some(ref default) = param_def.default {
+                    if default != "true" && default != "false" {
+                        diag.error(LoomError::ParamValidation {
+                            prompt: prompt_name.clone(),
+                            param: param_name.clone(),
+                            message: format!(
+                                "bool parameter default must be 'true' or 'false', got '{}'",
+                                default
+                            ),
+                        });
+                    }
+                }
+            }
+
+            // Int defaults must parse as integers
+            if param_def.param_type == crate::prompt::ParamType::Int {
+                if let Some(ref default) = param_def.default {
+                    if default.parse::<i64>().is_err() {
+                        diag.error(LoomError::ParamValidation {
+                            prompt: prompt_name.clone(),
+                            param: param_name.clone(),
+                            message: format!(
+                                "int parameter default must be a valid integer, got '{}'",
+                                default
+                            ),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // Validate default_profile if set
+    if let Some(ref dp) = default_profile {
+        if !profiles.contains_key(dp) {
+            diag.error(LoomError::InvalidDefaultProfile { name: dp.clone() });
+        }
     }
 
     if diag.has_errors() {
@@ -285,6 +362,7 @@ pub fn lower(
     Ok((WorkflowIR {
         name: ast.name.clone(),
         version: ast.version,
+        default_profile,
         states,
         steps,
         phases,
@@ -352,5 +430,143 @@ mod tests {
         assert_eq!(ir.wildcard_targets.len(), 2);
         assert_eq!(ir.prompts.len(), 6);
         assert!(!diag.has_errors());
+    }
+
+    /// Helper: parse and lower an inline workflow string with no prompts dir
+    fn lower_inline(src: &str) -> Result<(WorkflowIR, crate::error::Diagnostics), Vec<LoomError>> {
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        // Use a temp dir with no prompts so prompt loading is skipped for actions
+        let tmp = std::env::temp_dir().join("loom_test_empty");
+        let _ = std::fs::create_dir_all(&tmp);
+        lower(&ast, &tmp)
+    }
+
+    #[test]
+    fn test_duplicate_identifier() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Queue 1"
+                queue q1 "Queue 1 again"
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::DuplicateIdentifier { name } if name == "q1")));
+    }
+
+    #[test]
+    fn test_unresolved_step_queue() {
+        let src = r#"
+            workflow test v1 {
+                action a1 "Action" { produce agent prompt a1 }
+                step s1 { nonexistent -> a1 }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::UnresolvedReference { name, .. } if name == "nonexistent")));
+    }
+
+    #[test]
+    fn test_step_type_mismatch_queue_not_queue() {
+        let src = r#"
+            workflow test v1 {
+                action a1 "Action" { produce agent prompt a1 }
+                action a2 "Action2" { produce agent prompt a2 }
+                step s1 { a1 -> a2 }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::StepTypeMismatch { .. })));
+    }
+
+    #[test]
+    fn test_invalid_override_action_not_in_phases() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                queue q2 "Q2"
+                action a1 "A1" { produce agent prompt a1 }
+                action a2 "A2" { gate review agent prompt a2 }
+                action a3 "A3" { produce agent prompt a3 }
+                step s1 { q1 -> a1 }
+                step s2 { q2 -> a2 }
+                phase p1 { produce s1 gate s2 }
+                profile test_profile {
+                    phases [p1]
+                    output local
+                    override a3 { executor human }
+                }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::InvalidOverride { action } if action == "a3")));
+    }
+
+    #[test]
+    fn test_invalid_default_profile() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                terminal done
+                profile real_profile {
+                    phases []
+                    output local
+                }
+            }
+        "#;
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        let tmp = std::env::temp_dir().join("loom_test_empty");
+        let _ = std::fs::create_dir_all(&tmp);
+        let err = lower_with_config(&ast, &tmp, Some("nonexistent".to_string())).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::InvalidDefaultProfile { name } if name == "nonexistent")));
+    }
+
+    #[test]
+    fn test_enum_param_missing_values() {
+        // Create a temp prompt file with an enum param but no values
+        let tmp = std::env::temp_dir().join("loom_test_bad_param");
+        let prompts_dir = tmp.join("prompts");
+        let _ = std::fs::create_dir_all(&prompts_dir);
+        std::fs::write(prompts_dir.join("work.md"), r#"---
+accept: []
+success:
+  done: done
+failure: {}
+params:
+  color:
+    type: enum
+    description: Pick a color
+---
+Do the thing.
+"#).unwrap();
+
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                action work "Work" { produce agent prompt work }
+                terminal done
+                step s1 { q1 -> work }
+            }
+        "#;
+        let ast = crate::parse::parse_workflow(src).unwrap();
+        let err = lower(&ast, &tmp).unwrap_err();
+        assert!(err.iter().any(|e| matches!(e, LoomError::ParamValidation { param, .. } if param == "color")));
+    }
+
+    #[test]
+    fn test_phase_type_mismatch() {
+        let src = r#"
+            workflow test v1 {
+                queue q1 "Q1"
+                queue q2 "Q2"
+                action a1 "A1" { produce agent prompt a1 }
+                action a2 "A2" { produce agent prompt a2 }
+                step s1 { q1 -> a1 }
+                step s2 { q2 -> a2 }
+                phase p1 { produce s1 gate s2 }
+            }
+        "#;
+        let err = lower_inline(src).unwrap_err();
+        // s2's action (a2) is produce, but it's used as gate
+        assert!(err.iter().any(|e| matches!(e, LoomError::PhaseTypeMismatch { .. })));
     }
 }

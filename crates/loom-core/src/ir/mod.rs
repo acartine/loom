@@ -10,6 +10,7 @@ use crate::prompt::PromptFile;
 pub struct WorkflowIR {
     pub name: String,
     pub version: u32,
+    pub default_profile: Option<String>,
     pub states: IndexMap<String, StateDef>,
     pub steps: IndexMap<String, StepDef>,
     pub phases: IndexMap<String, PhaseDef>,

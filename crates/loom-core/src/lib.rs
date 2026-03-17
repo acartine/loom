@@ -25,8 +25,12 @@ pub fn load_workflow(workflow_dir: &Path) -> Result<(WorkflowIR, Diagnostics), V
     let ast = parse::parse_workflow(&source)
         .map_err(|e| vec![e])?;
 
-    // Lower to IR
-    ir::lower::lower(&ast, workflow_dir)
+    // Lower to IR with config metadata
+    ir::lower::lower_with_config(
+        &ast,
+        workflow_dir,
+        config.workflow.default_profile,
+    )
 }
 
 /// Load, lower, and validate a workflow. Returns the IR and all diagnostics.
@@ -57,9 +61,23 @@ pub fn validate_workflow(workflow_dir: &Path) -> Result<(WorkflowIR, Diagnostics
         }
     }
 
-    // Run graph validation
+    // Run full-workflow graph validation
     let graph_diag = graph::validate::validate(&ir);
     diag.merge(graph_diag);
+
+    // Run per-profile subgraph validation
+    for profile_name in ir.profiles.keys() {
+        if let Some(sub_ir) = graph::profile::extract_profile_subgraph(&ir, profile_name) {
+            let profile_diag = graph::validate::validate(&sub_ir);
+            for err in profile_diag.errors {
+                diag.error(LoomError::ProfileValidation {
+                    profile: profile_name.clone(),
+                    message: err.to_string(),
+                });
+            }
+            // Don't duplicate warnings from profile subgraphs
+        }
+    }
 
     Ok((ir, diag))
 }

@@ -1,5 +1,6 @@
 use crate::ir::{StateDef, WorkflowIR};
 use crate::parse::ast::{Executor, OutputKind};
+use crate::prompt::ParamType;
 
 /// Generate Rust code from the workflow IR
 pub fn generate(ir: &WorkflowIR) -> String {
@@ -14,6 +15,7 @@ pub fn generate(ir: &WorkflowIR) -> String {
     generate_executor_enum(&mut out);
     generate_output_kind_enum(&mut out);
     generate_outcome_enums(ir, &mut out);
+    generate_transition_fn(ir, &mut out);
     generate_profiles(ir, &mut out);
     generate_prompt_metadata(ir, &mut out);
 
@@ -135,6 +137,57 @@ fn generate_outcome_enums(ir: &WorkflowIR, out: &mut String) {
     }
 }
 
+/// Generate the `apply(state, outcome) -> Result<State, ApplyError>` transition function
+fn generate_transition_fn(ir: &WorkflowIR, out: &mut String) {
+    // Collect action states that have outcomes
+    let actions_with_outcomes: Vec<(&str, &str)> = ir.states.iter()
+        .filter_map(|(name, state)| {
+            if let StateDef::Action { prompt_name, .. } = state {
+                if ir.prompts.contains_key(prompt_name) {
+                    Some((name.as_str(), prompt_name.as_str()))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if actions_with_outcomes.is_empty() {
+        return;
+    }
+
+    // Outcome union enum
+    out.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n");
+    out.push_str("pub enum Outcome {\n");
+    for (action_name, _) in &actions_with_outcomes {
+        let enum_name = format!("{}Outcome", to_pascal_case(action_name));
+        out.push_str(&format!("    {}({}),\n", to_pascal_case(action_name), enum_name));
+    }
+    out.push_str("}\n\n");
+
+    // ApplyError
+    out.push_str("#[derive(Debug, Clone, PartialEq, Eq)]\n");
+    out.push_str("pub enum ApplyError {\n");
+    out.push_str("    InvalidOutcomeForState,\n");
+    out.push_str("}\n\n");
+
+    // apply function
+    out.push_str("pub fn apply(state: State, outcome: Outcome) -> Result<State, ApplyError> {\n");
+    out.push_str("    match (state, outcome) {\n");
+    for (action_name, _) in &actions_with_outcomes {
+        let pascal = to_pascal_case(action_name);
+        out.push_str(&format!(
+            "        (State::{}, Outcome::{}(o)) => Ok(o.target()),\n",
+            pascal, pascal
+        ));
+    }
+    out.push_str("        _ => Err(ApplyError::InvalidOutcomeForState),\n");
+    out.push_str("    }\n");
+    out.push_str("}\n\n");
+}
+
 fn generate_profiles(ir: &WorkflowIR, out: &mut String) {
     out.push_str("pub struct Profile {\n");
     out.push_str("    pub id: &'static str,\n");
@@ -168,7 +221,7 @@ fn generate_profiles(ir: &WorkflowIR, out: &mut String) {
 
         out.push_str(&format!("    output: {},\n", output));
 
-        // Executor overrides - build the full executor map for all actions in profile's phases
+        // Executor overrides
         out.push_str("    executors: &[");
         for phase_name in &profile.phases {
             if let Some(phase) = ir.phases.get(phase_name) {
@@ -200,9 +253,36 @@ fn generate_profiles(ir: &WorkflowIR, out: &mut String) {
 }
 
 fn generate_prompt_metadata(ir: &WorkflowIR, out: &mut String) {
+    // Param type enum
+    out.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n");
+    out.push_str("pub enum ParamType {\n");
+    out.push_str("    String,\n");
+    out.push_str("    Int,\n");
+    out.push_str("    Bool,\n");
+    out.push_str("    Enum,\n");
+    out.push_str("}\n\n");
+
+    // Param definition
+    out.push_str("pub struct ParamDef {\n");
+    out.push_str("    pub name: &'static str,\n");
+    out.push_str("    pub param_type: ParamType,\n");
+    out.push_str("    pub required: bool,\n");
+    out.push_str("    pub description: &'static str,\n");
+    out.push_str("}\n\n");
+
+    // Outcome metadata
+    out.push_str("pub struct OutcomeMeta {\n");
+    out.push_str("    pub name: &'static str,\n");
+    out.push_str("    pub target: State,\n");
+    out.push_str("    pub is_success: bool,\n");
+    out.push_str("}\n\n");
+
+    // Full prompt metadata
     out.push_str("pub struct PromptMeta {\n");
     out.push_str("    pub name: &'static str,\n");
     out.push_str("    pub accept: &'static [&'static str],\n");
+    out.push_str("    pub params: &'static [ParamDef],\n");
+    out.push_str("    pub outcomes: &'static [OutcomeMeta],\n");
     out.push_str("    pub body: &'static str,\n");
     out.push_str("}\n\n");
 
@@ -210,12 +290,50 @@ fn generate_prompt_metadata(ir: &WorkflowIR, out: &mut String) {
         let var_name = format!("PROMPT_{}", prompt_name.to_uppercase());
         out.push_str(&format!("pub const {}: PromptMeta = PromptMeta {{\n", var_name));
         out.push_str(&format!("    name: \"{}\",\n", prompt_name));
+
+        // Accept
         out.push_str("    accept: &[");
         for criteria in &prompt.accept {
             let escaped = criteria.replace('"', "\\\"");
             out.push_str(&format!("\"{}\", ", escaped));
         }
         out.push_str("],\n");
+
+        // Params
+        out.push_str("    params: &[");
+        for (param_name, param_def) in &prompt.params {
+            let pt = match param_def.param_type {
+                ParamType::String => "ParamType::String",
+                ParamType::Int => "ParamType::Int",
+                ParamType::Bool => "ParamType::Bool",
+                ParamType::Enum => "ParamType::Enum",
+            };
+            let desc = param_def.description.as_deref().unwrap_or("");
+            let desc_escaped = desc.replace('"', "\\\"");
+            out.push_str(&format!(
+                "ParamDef {{ name: \"{}\", param_type: {}, required: {}, description: \"{}\" }}, ",
+                param_name, pt, param_def.required, desc_escaped
+            ));
+        }
+        out.push_str("],\n");
+
+        // Outcomes
+        out.push_str("    outcomes: &[");
+        for (outcome, target) in &prompt.success {
+            out.push_str(&format!(
+                "OutcomeMeta {{ name: \"{}\", target: State::{}, is_success: true }}, ",
+                outcome, to_pascal_case(target)
+            ));
+        }
+        for (outcome, target) in &prompt.failure {
+            out.push_str(&format!(
+                "OutcomeMeta {{ name: \"{}\", target: State::{}, is_success: false }}, ",
+                outcome, to_pascal_case(target)
+            ));
+        }
+        out.push_str("],\n");
+
+        // Body
         let body_escaped = prompt.body.replace('\\', "\\\\").replace('"', "\\\"");
         out.push_str(&format!("    body: \"{}\",\n", body_escaped));
         out.push_str("};\n\n");
@@ -246,5 +364,14 @@ mod tests {
         assert!(code.contains("pub enum PlanningOutcome {"));
         assert!(code.contains("PlanComplete"));
         assert!(code.contains("pub const AUTOPILOT: Profile"));
+        // Transition function
+        assert!(code.contains("pub fn apply("));
+        assert!(code.contains("pub enum Outcome {"));
+        assert!(code.contains("pub enum ApplyError {"));
+        // Full prompt metadata
+        assert!(code.contains("pub struct PromptMeta {"));
+        assert!(code.contains("pub params: &'static [ParamDef]"));
+        assert!(code.contains("pub outcomes: &'static [OutcomeMeta]"));
+        assert!(code.contains("ParamType::Enum"));
     }
 }
