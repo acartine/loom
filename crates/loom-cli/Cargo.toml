@@ -1,0 +1,13 @@
+[package]
+name = "loom-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "loom"
+path = "src/main.rs"
+
+[dependencies]
+loom-core = { workspace = true }
+clap = { workspace = true }
+miette = { workspace = true }

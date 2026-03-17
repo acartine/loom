@@ -1,0 +1,16 @@
+[package]
+name = "loom-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pest = { workspace = true }
+pest_derive = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+toml = { workspace = true }
+petgraph = { workspace = true }
+indexmap = { workspace = true }
+thiserror = { workspace = true }
+miette = { workspace = true }
+regex = { workspace = true }
