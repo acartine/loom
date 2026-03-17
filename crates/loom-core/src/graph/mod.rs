@@ -100,11 +100,10 @@ pub fn build_graph(ir: &WorkflowIR) -> WorkflowGraph {
             if let Some(state) = ir.states.get(produce_action) {
                 if let crate::ir::StateDef::Action { prompt_name, .. } = state {
                     if let Some(prompt) = ir.prompts.get(prompt_name) {
-                        // Check if any success outcome already routes to the gate queue
-                        let already_routed = prompt.success.values()
-                            .any(|target| target == gate_queue);
-                        if !already_routed {
-                            // Add implicit phase link from produce action to gate queue
+                        // Per spec 3.2: explicit outcome routing takes precedence over
+                        // implicit phase transitions. Only add an implicit phase link if
+                        // the produce action has NO explicit success outcomes at all.
+                        if prompt.success.is_empty() {
                             if let (Some(&action_idx), Some(&queue_idx)) = (
                                 node_indices.get(produce_action),
                                 node_indices.get(gate_queue),

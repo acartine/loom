@@ -132,6 +132,17 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
             }
         }
 
+        // Body
+        if !prompt.body.is_empty() {
+            // Use triple-quoted TOML literal string for multiline body
+            out.push_str("body = \"\"\"\n");
+            out.push_str(&prompt.body);
+            if !prompt.body.ends_with('\n') {
+                out.push('\n');
+            }
+            out.push_str("\"\"\"\n");
+        }
+
         // Params
         for (param_name, param_def) in &prompt.params {
             out.push_str(&format!("[prompts.{}.params.{}]\n", prompt_name, param_name));

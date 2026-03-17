@@ -2,7 +2,7 @@
 
 **A language and compiler for agentic workflows.**
 
-Loom lets you define complex agent workflows as structured, typed programs — then validates them at compile time and generates code in Rust, Go, or Python. No runtime surprises. No implicit routing. No dead states hiding in production.
+Loom lets you define complex agent workflows as structured, typed programs — then validates them at compile time and generates typed code. No runtime surprises. No implicit routing. No dead states hiding in production.
 
 ```
 loom validate    # catch every mistake before anything runs
