@@ -86,38 +86,10 @@ pub fn build_graph(ir: &WorkflowIR) -> WorkflowGraph {
         }
     }
 
-    // Add phase links: produce action success -> gate queue (implicit)
-    // Per spec 3.2: if a produce action's success outcomes don't already target
-    // the gate queue, the compiler generates an implicit phase link edge.
-    for phase in ir.phases.values() {
-        if let (Some(produce_step), Some(gate_step)) = (
-            ir.steps.get(&phase.produce_step),
-            ir.steps.get(&phase.gate_step),
-        ) {
-            let produce_action = &produce_step.action;
-            let gate_queue = &gate_step.queue;
-
-            if let Some(state) = ir.states.get(produce_action) {
-                if let crate::ir::StateDef::Action { prompt_name, .. } = state {
-                    if let Some(prompt) = ir.prompts.get(prompt_name) {
-                        // Per spec 3.2: explicit outcome routing takes precedence over
-                        // implicit phase transitions. Only add an implicit phase link if
-                        // the produce action has NO explicit success outcomes at all.
-                        if prompt.success.is_empty() {
-                            if let (Some(&action_idx), Some(&queue_idx)) = (
-                                node_indices.get(produce_action),
-                                node_indices.get(gate_queue),
-                            ) {
-                                graph.add_edge(action_idx, queue_idx, EdgeKind::PhaseLink {
-                                    phase: phase.name.clone(),
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // Phase links: Per spec 3.2, explicit outcome routing in prompts takes
+    // precedence over implicit phase transitions. Validation now requires all
+    // produce actions to have at least one success outcome, so implicit phase
+    // links are never generated — the prompt's explicit routing is authoritative.
 
     // Add wildcard transitions
     for target in &ir.wildcard_targets {

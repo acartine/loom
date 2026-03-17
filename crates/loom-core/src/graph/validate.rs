@@ -11,6 +11,7 @@ pub fn validate(ir: &WorkflowIR) -> Diagnostics {
     let graph = build_graph(ir);
     let mut diag = Diagnostics::new();
 
+    check_produce_has_success(ir, &mut diag);
     check_dead_states(ir, &graph, &mut diag);
     check_terminal_reachability(ir, &graph, &mut diag);
     check_orphaned_prompts(ir, &mut diag);
@@ -18,6 +19,24 @@ pub fn validate(ir: &WorkflowIR) -> Diagnostics {
     check_warnings(ir, &mut diag);
 
     diag
+}
+
+/// Check that every produce action has at least one success outcome.
+/// Without this, there is no codegen path to advance through the phase.
+fn check_produce_has_success(ir: &WorkflowIR, diag: &mut Diagnostics) {
+    for (name, state) in &ir.states {
+        if let StateDef::Action { prompt_name, .. } = state {
+            if state.is_produce() {
+                if let Some(prompt) = ir.prompts.get(prompt_name) {
+                    if prompt.success.is_empty() {
+                        diag.error(LoomError::ProduceNoSuccess {
+                            action: name.clone(),
+                        });
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Check that every non-terminal, non-escape state has at least one inbound edge.

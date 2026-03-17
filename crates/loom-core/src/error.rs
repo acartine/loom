@@ -85,6 +85,11 @@ pub enum LoomError {
         action: String,
     },
 
+    #[error("Produce action '{action}' has no success outcomes; produce actions must declare at least one success outcome to advance the workflow")]
+    ProduceNoSuccess {
+        action: String,
+    },
+
     #[error("Escape reachability: escape state '{name}' has no path back to the workflow")]
     EscapeUnreachable {
         name: String,
