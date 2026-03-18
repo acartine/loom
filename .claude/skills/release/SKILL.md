@@ -3,7 +3,7 @@ name: release
 description: Release a new version of Loom — bumps version, runs checks, tags, and pushes
 argument-hint: <version>
 disable-model-invocation: true
-allowed-tools: Bash(*), Read, Edit, Grep, Glob
+allowed-tools: Bash, Read, Edit, Grep, Glob
 ---
 
 # Release Loom
