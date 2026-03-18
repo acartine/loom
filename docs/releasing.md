@@ -8,7 +8,6 @@ The release workflow publishes tarballs for:
 
 - `x86_64-unknown-linux-musl`
 - `aarch64-unknown-linux-musl`
-- `x86_64-apple-darwin`
 - `aarch64-apple-darwin`
 
 Each release also includes `loom-checksums.txt`, which the install script uses for checksum verification.

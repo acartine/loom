@@ -27,9 +27,6 @@ jobs:
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-latest
             use_zig: true
-          - target: x86_64-apple-darwin
-            runner: macos-13
-            use_zig: false
           - target: aarch64-apple-darwin
             runner: macos-14
             use_zig: false
