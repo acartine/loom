@@ -47,9 +47,13 @@ Cut a new release of Loom. The version argument must be a valid semver string (e
    git push origin v<version>
    ```
 
-9. **Report.** Print:
-   - The GitHub Actions workflow URL: `https://github.com/acartine/loom/actions/workflows/release.yml`
-   - Smoke-test command to run after the workflow completes:
-     ```
-     curl -fsSL https://raw.githubusercontent.com/acartine/loom/main/install.sh | sh && loom --version
-     ```
+9. **Wait for the release workflow.** Poll until complete:
+   - Find the workflow run: `gh run list --workflow=release.yml --limit=1 --json databaseId,status --jq '.[0]'`
+   - Poll with `gh run view <run-id>` every 30 seconds until the status is `completed`
+   - If the conclusion is `success`, print a success message with the release URL: `https://github.com/acartine/loom/releases/tag/v<version>`
+   - If the conclusion is `failure`, print the failure details from `gh run view <run-id> --log-failed` and abort
+
+10. **Smoke-test.** Print the smoke-test command for the user to run:
+    ```
+    curl -fsSL https://raw.githubusercontent.com/acartine/loom/main/install.sh | sh && loom --version
+    ```
