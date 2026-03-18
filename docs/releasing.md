@@ -13,33 +13,65 @@ The release workflow publishes tarballs for:
 
 Each release also includes `loom-checksums.txt`, which the install script uses for checksum verification.
 
-## Release checklist
+## Recommended: `/release` skill
 
-1. Update the version in [`Cargo.toml`](/Users/cartine/loom/Cargo.toml).
-2. Run:
+The easiest way to cut a release is the Claude Code skill:
+
+```
+/release 0.2.0
+```
+
+This validates preconditions, bumps the version, runs checks, commits, tags, and pushes — all in one step.
+
+## Manual release checklist
+
+If you prefer to release manually (or the skill isn't available):
+
+1. Update the version in the workspace [`Cargo.toml`](/Cargo.toml) (`[workspace.package]` section).
+2. Sync the lockfile:
 
 ```bash
-cargo fmt --all
+cargo generate-lockfile
+```
+
+3. Run checks:
+
+```bash
+cargo fmt --all --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --locked
 ```
 
-3. Commit the release changes.
-4. Create and push a version tag:
+4. Commit the release changes:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git commit -am "release: v0.2.0"
 ```
 
-5. Wait for the `Release` GitHub Actions workflow to finish.
-6. Confirm the release contains all tarballs and `loom-checksums.txt`.
-7. Smoke-test the installer:
+5. Create and push a version tag:
+
+```bash
+git tag v0.2.0
+git push origin main
+git push origin v0.2.0
+```
+
+6. Wait for the [Release workflow](https://github.com/acartine/loom/actions/workflows/release.yml) to finish.
+7. Confirm the release contains all tarballs and `loom-checksums.txt`.
+8. Smoke-test the installer:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/acartine/loom/main/install.sh | sh
 loom --version
 ```
+
+## Re-running a failed release
+
+The release workflow supports `workflow_dispatch`. If a release build fails, you can re-trigger it from the GitHub Actions UI without re-pushing the tag:
+
+1. Go to [Actions → Release](https://github.com/acartine/loom/actions/workflows/release.yml)
+2. Click **Run workflow**
+3. Enter the tag (e.g. `v0.2.0`) and run
 
 ## Install paths
 
