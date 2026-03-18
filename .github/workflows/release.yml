@@ -44,6 +44,8 @@ jobs:
       - name: Setup Zig
         if: matrix.use_zig
         uses: mlugg/setup-zig@v1
+        with:
+          version: 0.14.1
       - name: Install cargo-zigbuild
         if: matrix.use_zig
         uses: taiki-e/install-action@cargo-zigbuild
