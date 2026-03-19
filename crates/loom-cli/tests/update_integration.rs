@@ -112,6 +112,9 @@ fn handle_connection(
     archive_bytes: &[u8],
     checksums_bytes: &[u8],
 ) {
+    stream
+        .set_nonblocking(false)
+        .expect("set stream blocking");
     let mut request = [0_u8; 4096];
     let read = stream.read(&mut request).expect("read request");
     let request_line = String::from_utf8_lossy(&request[..read]);
