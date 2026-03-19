@@ -1,3 +1,4 @@
+use loom_core::codegen::knots_bundle;
 use loom_core::codegen::toml_emit;
 use loom_core::codegen::{self, CodegenTarget};
 use std::path::Path;
@@ -8,6 +9,7 @@ pub enum EmitFormat {
     Go,
     Python,
     Toml,
+    KnotsBundle,
 }
 
 pub fn run(dir: &Path, format: EmitFormat) -> miette::Result<()> {
@@ -44,6 +46,7 @@ pub fn run(dir: &Path, format: EmitFormat) -> miette::Result<()> {
             codegen::generate(&ir, CodegenTarget::Python).map_err(|e| miette::miette!("{}", e))?
         }
         EmitFormat::Toml => toml_emit::emit_toml(&ir),
+        EmitFormat::KnotsBundle => knots_bundle::emit_knots_bundle(&ir),
     };
 
     print!("{}", output);

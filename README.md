@@ -192,6 +192,9 @@ Without a compiler, workflow logic tends to sprawl across prompt templates, runt
 ## Docs
 
 - [Getting started guide](/Users/cartine/loom/docs/getting-started.md)
+- [Configure and install a custom Knots workflow](/Users/cartine/loom/docs/configure-and-install-a-custom-knots-workflow.md)
+- [Under the hood: Knots and Loom](/Users/cartine/loom/docs/under-the-hood-knots-and-loom.md)
+- [How to prompt an agent to build a workflow](/Users/cartine/loom/docs/how-to-prompt-an-agent-to-build-a-workflow.md)
 - [Release guide](/Users/cartine/loom/docs/releasing.md)
 - [Language specification](/Users/cartine/loom/schema.md)
 - [Contributing guide](/Users/cartine/loom/CONTRIBUTING.md)

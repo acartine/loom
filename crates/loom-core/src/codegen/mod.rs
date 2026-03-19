@@ -1,4 +1,5 @@
 pub mod go;
+pub mod knots_bundle;
 pub mod python;
 pub mod rust;
 pub mod toml_emit;

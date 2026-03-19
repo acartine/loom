@@ -1,5 +1,7 @@
+use serde_json::Value;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Returns the path to the `loom` binary built by cargo.
 fn loom_bin() -> PathBuf {
@@ -21,6 +23,16 @@ fn workspace_root() -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.pop(); // crates/
     path.pop(); // workspace root
+    path
+}
+
+fn unique_temp_dir(prefix: &str) -> PathBuf {
+    let mut path = std::env::temp_dir();
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock should be after unix epoch")
+        .as_nanos();
+    path.push(format!("{}_{}_{}", prefix, std::process::id(), nanos));
     path
 }
 
@@ -82,6 +94,32 @@ fn test_build_toml() {
         "expected '[workflow]' in stdout, got: {}",
         stdout
     );
+}
+
+#[test]
+fn test_build_knots_bundle() {
+    let output = Command::new(loom_bin())
+        .args([
+            "build",
+            "tests/fixtures/knots_sdlc",
+            "--emit",
+            "knots-bundle",
+        ])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom");
+
+    assert!(
+        output.status.success(),
+        "build --emit knots-bundle should succeed, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: Value = serde_json::from_str(&stdout).expect("knots bundle output should be json");
+    assert_eq!(json["format"], "knots-bundle");
+    assert_eq!(json["workflow"]["name"], "knots_sdlc");
+    assert_eq!(json["workflow"]["default_profile"], "autopilot");
 }
 
 #[test]
@@ -151,6 +189,31 @@ fn test_graph_with_profile() {
 }
 
 #[test]
+fn test_template_list() {
+    let output = Command::new(loom_bin())
+        .args(["template", "list"])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom template list");
+
+    assert!(
+        output.status.success(),
+        "template list should succeed, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("minimal"),
+        "template list should include minimal"
+    );
+    assert!(
+        stdout.contains("knots_sdlc"),
+        "template list should include knots_sdlc"
+    );
+}
+
+#[test]
 fn test_init_and_validate() {
     let parent = std::env::temp_dir().join("loom_test_init_parent");
     let workflow_name = "test_workflow";
@@ -189,6 +252,53 @@ fn test_init_and_validate() {
     assert!(
         !String::from_utf8_lossy(&validate_output.stderr).contains("warning:"),
         "validate on init'd dir should be warning-free, stderr: {}",
+        String::from_utf8_lossy(&validate_output.stderr)
+    );
+}
+
+#[test]
+fn test_init_knots_sdlc_template_and_validate() {
+    let parent = unique_temp_dir("loom_test_init_knots_sdlc");
+    let workflow_name = "payments-flow";
+    let workflow_dir = parent.join(workflow_name);
+
+    std::fs::create_dir_all(&parent).expect("failed to create temp parent dir");
+
+    let init_output = Command::new(loom_bin())
+        .args(["init", "--template", "knots_sdlc", workflow_name])
+        .current_dir(&parent)
+        .output()
+        .expect("failed to execute loom init");
+
+    assert!(
+        init_output.status.success(),
+        "init --template knots_sdlc should succeed, stderr: {}",
+        String::from_utf8_lossy(&init_output.stderr)
+    );
+
+    let config = std::fs::read_to_string(workflow_dir.join("loom.toml"))
+        .expect("knots_sdlc template should write loom.toml");
+    let workflow = std::fs::read_to_string(workflow_dir.join("workflow.loom"))
+        .expect("knots_sdlc template should write workflow.loom");
+
+    assert!(
+        workflow_dir.join("profiles/autopilot.loom").exists(),
+        "knots_sdlc template should write bundled profiles"
+    );
+    assert!(config.contains("name = \"payments_flow\""));
+    assert!(workflow.contains("workflow payments_flow v1"));
+
+    let validate_output = Command::new(loom_bin())
+        .args(["validate", workflow_dir.to_str().unwrap()])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom validate");
+
+    let _ = std::fs::remove_dir_all(&parent);
+
+    assert!(
+        validate_output.status.success(),
+        "validate on init'd knots_sdlc dir should succeed, stderr: {}",
         String::from_utf8_lossy(&validate_output.stderr)
     );
 }

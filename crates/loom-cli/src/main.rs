@@ -1,4 +1,5 @@
 mod commands;
+mod templates;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -14,8 +15,17 @@ struct Cli {
 enum Commands {
     /// Create a new workflow directory
     Init {
+        /// Built-in template identifier
+        #[arg(long, default_value = "minimal")]
+        template: String,
+
         /// Workflow name
         name: String,
+    },
+    /// Inspect bundled workflow templates
+    Template {
+        #[command(subcommand)]
+        command: TemplateCommands,
     },
     /// Validate a workflow directory
     Validate {
@@ -83,17 +93,32 @@ enum Commands {
     },
 }
 
+#[derive(Subcommand)]
+enum TemplateCommands {
+    /// List bundled workflow templates
+    List,
+}
+
 fn main() -> miette::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Init { name } => commands::init::run(&name),
+        Commands::Init { template, name } => commands::init::run(&name, &template),
+        Commands::Template { command } => match command {
+            TemplateCommands::List => commands::template::list(),
+        },
         Commands::Validate { dir } => commands::validate::run(&dir),
         Commands::Build { dir, lang, emit } => {
             let format = if let Some(emit) = &emit {
                 match emit.as_str() {
                     "toml" => commands::build::EmitFormat::Toml,
-                    _ => return Err(miette::miette!("unsupported emit format: {}", emit)),
+                    "knots-bundle" => commands::build::EmitFormat::KnotsBundle,
+                    _ => {
+                        return Err(miette::miette!(
+                            "unsupported emit format: {} (supported: toml, knots-bundle)",
+                            emit
+                        ))
+                    }
                 }
             } else {
                 match lang.as_str() {
