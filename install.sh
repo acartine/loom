@@ -19,25 +19,25 @@ detect_target() {
     os="$(uname -s)"
     arch="$(uname -m)"
 
-    case "$os" in
-        Linux) os_part="unknown-linux-musl" ;;
-        Darwin) os_part="apple-darwin" ;;
+    case "$os:$arch" in
+        Linux:x86_64|Linux:amd64)
+            printf "x86_64-unknown-linux-musl"
+            ;;
+        Linux:arm64|Linux:aarch64)
+            printf "aarch64-unknown-linux-musl"
+            ;;
+        Darwin:arm64|Darwin:aarch64)
+            printf "aarch64-apple-darwin"
+            ;;
+        Darwin:x86_64|Darwin:amd64)
+            echo "error: unsupported platform: macOS x86_64 has no published Loom release artifact" >&2
+            exit 1
+            ;;
         *)
-            echo "error: unsupported operating system: $os" >&2
+            echo "error: unsupported platform: ${os} ${arch}. Supported targets: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, aarch64-apple-darwin" >&2
             exit 1
             ;;
     esac
-
-    case "$arch" in
-        x86_64|amd64) arch_part="x86_64" ;;
-        arm64|aarch64) arch_part="aarch64" ;;
-        *)
-            echo "error: unsupported architecture: $arch" >&2
-            exit 1
-            ;;
-    esac
-
-    printf "%s-%s" "$arch_part" "$os_part"
 }
 
 download_url() {

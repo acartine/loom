@@ -11,6 +11,7 @@ The release workflow publishes tarballs for:
 - `aarch64-apple-darwin`
 
 Each release also includes `loom-checksums.txt`, which the install script uses for checksum verification.
+Both `install.sh` and `loom update` resolve `latest` through GitHub's redirect-based release asset URLs (`/releases/latest/download/...`) instead of the Releases API, which avoids burning API rate limits for end users.
 
 ## Recommended: `/release` skill
 
@@ -87,3 +88,5 @@ To install a specific release:
 ```bash
 LOOM_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/acartine/loom/main/install.sh | sh
 ```
+
+`loom update` only supports the published release matrix above and only updates binaries that already look installed from `~/.local/bin`, `/usr/local/bin`, `/usr/bin`, or `/opt/homebrew/bin`.

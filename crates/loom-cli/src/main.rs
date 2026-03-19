@@ -91,6 +91,16 @@ enum Commands {
         #[arg(long)]
         emit_map: bool,
     },
+    /// Update the installed loom binary to the latest release
+    Update {
+        /// Report whether an update is available without changing anything
+        #[arg(long)]
+        check: bool,
+
+        /// Reinstall the resolved version even when it matches the current version
+        #[arg(long)]
+        force: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -160,5 +170,6 @@ fn main() -> miette::Result<()> {
             new_dir,
             emit_map,
         } => commands::compat::run(&old_dir, &new_dir, emit_map),
+        Commands::Update { check, force } => commands::update::run(check, force),
     }
 }

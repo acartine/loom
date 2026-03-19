@@ -24,6 +24,13 @@ cd loom
 cargo install --locked --path crates/loom-cli
 ```
 
+To refresh an installed release later without re-running the shell installer:
+
+```bash
+loom update
+loom update --check
+```
+
 If you do not want to install the binary yet, replace `loom` with `cargo run -p loom-cli --` in the commands below.
 
 ## 2. Validate the reference workflow
