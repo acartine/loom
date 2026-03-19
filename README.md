@@ -34,6 +34,13 @@ cd loom
 cargo install --locked --path crates/loom-cli
 ```
 
+Update an installed release in place:
+
+```bash
+loom update
+loom update --check
+```
+
 Sanity-check the reference workflow that ships with the repo:
 
 ```bash
@@ -177,6 +184,7 @@ params:
 | `loom sim [dir] --profile <name>` | Walk the workflow interactively |
 | `loom diff <old-dir> <new-dir>` | Show structural changes between workflow versions |
 | `loom check-compat <old-dir> <new-dir>` | Check backward compatibility and optionally emit a state map |
+| `loom update [--check] [--force]` | Self-update an installed release binary using GitHub release asset redirects |
 
 ## Why This Is Useful
 

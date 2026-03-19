@@ -5,4 +5,5 @@ pub mod graph;
 pub mod init;
 pub mod sim;
 pub mod template;
+pub mod update;
 pub mod validate;

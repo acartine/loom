@@ -111,11 +111,7 @@ pub fn emit_knots_bundle(ir: &WorkflowIR) -> String {
             version: ir.version,
             default_profile: ir.default_profile.clone(),
         },
-        states: ir
-            .states
-            .values()
-            .map(state_bundle)
-            .collect(),
+        states: ir.states.values().map(state_bundle).collect(),
         steps: ir.steps.values().map(step_bundle).collect(),
         phases: ir.phases.values().map(phase_bundle).collect(),
         profiles: ir
