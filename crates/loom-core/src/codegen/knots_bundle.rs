@@ -114,7 +114,7 @@ pub fn emit_knots_bundle(ir: &WorkflowIR) -> String {
         states: ir
             .states
             .values()
-            .map(|state| state_bundle(state))
+            .map(state_bundle)
             .collect(),
         steps: ir.steps.values().map(step_bundle).collect(),
         phases: ir.phases.values().map(phase_bundle).collect(),
