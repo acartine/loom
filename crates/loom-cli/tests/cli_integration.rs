@@ -216,6 +216,27 @@ fn test_template_list() {
         stdout.contains("knots_sdlc"),
         "template list should include knots_sdlc"
     );
+
+    let minimal_line = stdout
+        .lines()
+        .find(|line| line.contains("minimal"))
+        .expect("template list should include minimal line");
+    let knots_line = stdout
+        .lines()
+        .find(|line| line.contains("knots_sdlc"))
+        .expect("template list should include knots_sdlc line");
+
+    let minimal_desc_start = minimal_line
+        .find("One produce step, one review step, one phase, one default profile")
+        .expect("minimal description should be present");
+    let knots_desc_start = knots_line
+        .find("Planning, implementation, review, shipment, and multiple execution profiles")
+        .expect("knots_sdlc description should be present");
+
+    assert_eq!(
+        minimal_desc_start, knots_desc_start,
+        "template descriptions should start in the same column"
+    );
 }
 
 #[test]
