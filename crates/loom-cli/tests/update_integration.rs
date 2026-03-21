@@ -1,44 +1,16 @@
+mod common;
+
+use common::TestInstall;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::path::PathBuf;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
-use tempfile::TempDir;
-
-fn loom_bin() -> PathBuf {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.pop();
-    path.pop();
-    path.push("target");
-    path.push("debug");
-    path.push("loom");
-    path
-}
-
-struct TestInstall {
-    _tempdir: TempDir,
-    executable: PathBuf,
-}
-
-impl TestInstall {
-    fn new() -> Self {
-        let tempdir = tempfile::tempdir().expect("tempdir");
-        let bin_dir = tempdir.path().join(".local/bin");
-        fs::create_dir_all(&bin_dir).expect("create bin dir");
-        let executable = bin_dir.join("loom");
-        fs::copy(loom_bin(), &executable).expect("copy loom binary");
-        Self {
-            _tempdir: tempdir,
-            executable,
-        }
-    }
-}
 
 struct StubReleaseServer {
     addr: SocketAddr,

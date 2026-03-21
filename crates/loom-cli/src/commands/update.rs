@@ -1,3 +1,6 @@
+use super::install_paths::{
+    current_executable_path, ensure_parent_writable, validate_install_location, BIN_NAME,
+};
 use flate2::read::GzDecoder;
 use miette::{Context, IntoDiagnostic};
 use reqwest::blocking::{Client, Response};
@@ -5,17 +8,15 @@ use reqwest::header::LOCATION;
 use semver::Version;
 use sha2::{Digest, Sha256};
 use std::env;
-use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use tar::Archive;
 use tempfile::{tempdir, NamedTempFile};
 
 const DEFAULT_BASE_URL: &str = "https://github.com/acartine/loom";
 const CHECKSUM_FILE: &str = "loom-checksums.txt";
-const BIN_NAME: &str = "loom";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,7 +43,7 @@ struct ReleaseUrls {
 pub fn run(check: bool, force: bool) -> miette::Result<()> {
     let target = detect_release_target()?;
     let executable = current_executable_path()?;
-    validate_install_location(&executable)?;
+    validate_install_location(&executable, "self-update")?;
 
     let client = build_client()?;
     let urls = release_urls(&release_base_url(), &target, None);
@@ -193,55 +194,6 @@ fn parse_release_tag_from_url(url: &str) -> miette::Result<String> {
 
 fn normalize_version(raw: &str) -> miette::Result<Version> {
     Version::parse(raw.trim_start_matches('v')).into_diagnostic()
-}
-
-fn current_executable_path() -> miette::Result<PathBuf> {
-    env::current_exe().into_diagnostic()
-}
-
-fn validate_install_location(path: &Path) -> miette::Result<()> {
-    if path.file_name() != Some(OsStr::new(BIN_NAME)) {
-        return Err(miette::miette!(
-            "refusing to self-update from {}: the executable does not look like an installed `{BIN_NAME}` binary",
-            path.display()
-        ));
-    }
-
-    if !looks_like_installed_binary(path) {
-        return Err(miette::miette!(
-            "refusing to self-update from {}: install Loom into ~/.local/bin, /usr/local/bin, /usr/bin, or /opt/homebrew/bin first",
-            path.display()
-        ));
-    }
-
-    Ok(())
-}
-
-fn looks_like_installed_binary(path: &Path) -> bool {
-    if path
-        .components()
-        .any(|component| matches!(component, Component::Normal(part) if part == ".local"))
-        && path.parent().and_then(Path::file_name) == Some(OsStr::new("bin"))
-    {
-        return true;
-    }
-
-    const PREFIXES: &[&str] = &["/usr/local/bin", "/usr/bin", "/opt/homebrew/bin"];
-    PREFIXES.iter().any(|prefix| path.starts_with(prefix))
-}
-
-fn ensure_parent_writable(path: &Path) -> miette::Result<()> {
-    let parent = path.parent().ok_or_else(|| {
-        miette::miette!(
-            "cannot update {} because it has no parent directory",
-            path.display()
-        )
-    })?;
-    let probe = NamedTempFile::new_in(parent)
-        .into_diagnostic()
-        .wrap_err_with(|| format!("cannot write to {}", parent.display()))?;
-    drop(probe);
-    Ok(())
 }
 
 fn download_to_path(client: &Client, url: &str, destination: &Path) -> miette::Result<String> {
@@ -399,6 +351,7 @@ mod tests {
 
     #[test]
     fn recognizes_installed_paths() {
+        use crate::commands::install_paths::looks_like_installed_binary;
         assert!(looks_like_installed_binary(Path::new(
             "/tmp/test/.local/bin/loom"
         )));

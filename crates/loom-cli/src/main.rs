@@ -102,6 +102,16 @@ enum Commands {
         #[arg(long)]
         force: bool,
     },
+    /// Remove the installed loom binary from the system
+    Uninstall {
+        /// Skip the confirmation prompt
+        #[arg(long)]
+        force: bool,
+
+        /// Also remove channel directories (~/.local/bin/acartine_loom/)
+        #[arg(long)]
+        purge: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -172,5 +182,6 @@ fn main() -> miette::Result<()> {
             emit_map,
         } => commands::compat::run(&old_dir, &new_dir, emit_map),
         Commands::Update { check, force } => commands::update::run(check, force),
+        Commands::Uninstall { force, purge } => commands::uninstall::run(force, purge),
     }
 }
