@@ -23,6 +23,8 @@ loom init --template knots_sdlc my_team_flow
 cd my_team_flow
 ```
 
+The shorthand `loom init knots_sdlc` also works when you want the directory and workflow name to stay `knots_sdlc`.
+
 This creates a complete workflow package:
 
 - `workflow.loom`: the workflow structure
@@ -33,14 +35,13 @@ This creates a complete workflow package:
 If you are not sure which template to start from:
 
 ```bash
-loom template list
+loom templates list
 ```
 
 Common starting points:
 
 - `minimal`: one produce step, one review step
 - `knots_sdlc`: planning, implementation, review, and shipment
-- `support_triage`: intake, routing, and escalation
 
 ## Step 2. Rename the workflow for your team
 

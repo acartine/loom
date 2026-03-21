@@ -50,6 +50,11 @@ fn test_validate() {
         "validate should succeed, stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
+    assert!(
+        !String::from_utf8_lossy(&output.stderr).contains("warning:"),
+        "validate on fixture should be warning-free, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 #[test]
@@ -214,6 +219,27 @@ fn test_template_list() {
 }
 
 #[test]
+fn test_templates_list_alias() {
+    let output = Command::new(loom_bin())
+        .args(["templates", "list"])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom templates list");
+
+    assert!(
+        output.status.success(),
+        "templates list should succeed, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("knots_sdlc"),
+        "templates list should include knots_sdlc"
+    );
+}
+
+#[test]
 fn test_init_and_validate() {
     let parent = std::env::temp_dir().join("loom_test_init_parent");
     let workflow_name = "test_workflow";
@@ -252,6 +278,55 @@ fn test_init_and_validate() {
     assert!(
         !String::from_utf8_lossy(&validate_output.stderr).contains("warning:"),
         "validate on init'd dir should be warning-free, stderr: {}",
+        String::from_utf8_lossy(&validate_output.stderr)
+    );
+}
+
+#[test]
+fn test_init_knots_sdlc_shorthand_and_validate() {
+    let parent = unique_temp_dir("loom_test_init_knots_sdlc_shorthand");
+    let workflow_name = "knots_sdlc";
+    let workflow_dir = parent.join(workflow_name);
+
+    std::fs::create_dir_all(&parent).expect("failed to create temp parent dir");
+
+    let init_output = Command::new(loom_bin())
+        .args(["init", workflow_name])
+        .current_dir(&parent)
+        .output()
+        .expect("failed to execute loom init");
+
+    assert!(
+        init_output.status.success(),
+        "init knots_sdlc should succeed, stderr: {}",
+        String::from_utf8_lossy(&init_output.stderr)
+    );
+
+    assert!(
+        workflow_dir.join("profiles/autopilot.loom").exists(),
+        "knots_sdlc shorthand should write bundled profiles"
+    );
+    assert!(
+        workflow_dir.join("prompts/planning.md").exists(),
+        "knots_sdlc shorthand should write bundled prompts"
+    );
+
+    let validate_output = Command::new(loom_bin())
+        .args(["validate", workflow_dir.to_str().unwrap()])
+        .current_dir(workspace_root())
+        .output()
+        .expect("failed to execute loom validate");
+
+    let _ = std::fs::remove_dir_all(&parent);
+
+    assert!(
+        validate_output.status.success(),
+        "validate on shorthand init'd knots_sdlc dir should succeed, stderr: {}",
+        String::from_utf8_lossy(&validate_output.stderr)
+    );
+    assert!(
+        !String::from_utf8_lossy(&validate_output.stderr).contains("warning:"),
+        "validate on shorthand init'd knots_sdlc dir should be warning-free, stderr: {}",
         String::from_utf8_lossy(&validate_output.stderr)
     );
 }
@@ -299,6 +374,11 @@ fn test_init_knots_sdlc_template_and_validate() {
     assert!(
         validate_output.status.success(),
         "validate on init'd knots_sdlc dir should succeed, stderr: {}",
+        String::from_utf8_lossy(&validate_output.stderr)
+    );
+    assert!(
+        !String::from_utf8_lossy(&validate_output.stderr).contains("warning:"),
+        "validate on init'd knots_sdlc dir should be warning-free, stderr: {}",
         String::from_utf8_lossy(&validate_output.stderr)
     );
 }

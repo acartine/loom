@@ -3,10 +3,12 @@
 set -eu
 
 OWNER="${LOOM_INSTALL_OWNER:-acartine}"
-REPO="${LOOM_INSTALL_REPO:-loom}"
+REPO_NAME="${LOOM_INSTALL_REPO:-loom}"
+REPO="${LOOM_GITHUB_REPO:-${OWNER}/${REPO_NAME}}"
 BIN_NAME="loom"
-BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
+BIN_DIR="${LOOM_INSTALL_DIR:-${BIN_DIR:-$HOME/.local/bin}}"
 VERSION="${LOOM_VERSION:-latest}"
+DOWNLOAD_BASE="${LOOM_RELEASE_DOWNLOAD_BASE:-https://github.com}"
 
 need_cmd() {
     command -v "$1" >/dev/null 2>&1 || {
@@ -44,17 +46,17 @@ download_url() {
     target="$1"
 
     if [ "$VERSION" = "latest" ]; then
-        printf "https://github.com/%s/%s/releases/latest/download/loom-%s.tar.gz" "$OWNER" "$REPO" "$target"
+        printf "%s/%s/releases/latest/download/loom-%s.tar.gz" "${DOWNLOAD_BASE%/}" "$REPO" "$target"
     else
-        printf "https://github.com/%s/%s/releases/download/%s/loom-%s.tar.gz" "$OWNER" "$REPO" "$VERSION" "$target"
+        printf "%s/%s/releases/download/%s/loom-%s.tar.gz" "${DOWNLOAD_BASE%/}" "$REPO" "$VERSION" "$target"
     fi
 }
 
 checksums_url() {
     if [ "$VERSION" = "latest" ]; then
-        printf "https://github.com/%s/%s/releases/latest/download/loom-checksums.txt" "$OWNER" "$REPO"
+        printf "%s/%s/releases/latest/download/loom-checksums.txt" "${DOWNLOAD_BASE%/}" "$REPO"
     else
-        printf "https://github.com/%s/%s/releases/download/%s/loom-checksums.txt" "$OWNER" "$REPO" "$VERSION"
+        printf "%s/%s/releases/download/%s/loom-checksums.txt" "${DOWNLOAD_BASE%/}" "$REPO" "$VERSION"
     fi
 }
 
