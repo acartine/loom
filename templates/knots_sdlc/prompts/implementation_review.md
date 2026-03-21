@@ -11,8 +11,8 @@ success:
 
 failure:
   changes_requested: ready_for_implementation
-  architecture_concern: ready_for_implementation
-  critical_issues: ready_for_implementation
+  architecture_concern: ready_for_planning
+  critical_issues: deferred
 
 params: {}
 ---

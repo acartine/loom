@@ -41,25 +41,18 @@ loom update
 loom update --check
 ```
 
-Sanity-check the reference workflow that ships with the repo:
+List the bundled templates and scaffold the full Knots SDLC workflow:
 
 ```bash
-loom validate tests/fixtures/knots_sdlc
-loom graph tests/fixtures/knots_sdlc --format ascii
-loom build tests/fixtures/knots_sdlc --lang rust > /tmp/knots_workflow.rs
-```
-
-Then create your own workflow scaffold:
-
-```bash
-loom init support_triage
-cd support_triage
+loom templates list
+loom init knots_sdlc
+cd knots_sdlc
 loom validate
 loom build --lang rust > workflow.rs
 loom graph --format mermaid > workflow.mmd
 ```
 
-The scaffold is intentionally small but complete: two queues, a produce action, a gate action, two prompt files, one phase, and a default profile. It validates cleanly without warnings.
+`loom init knots_sdlc` creates the complete bundled workflow package: planning, implementation, review, shipment, six prompt files, and six execution profiles. If you want that same template under a different directory name, run `loom init --template knots_sdlc my_team_flow` instead.
 
 For a fuller walkthrough, see [docs/getting-started.md](/Users/cartine/loom/docs/getting-started.md).
 
@@ -114,12 +107,12 @@ knots_sdlc/
 
 The fastest evaluation loop is:
 
-1. Run `loom init <name>`.
-2. Open `workflow.loom`, `prompts/work.md`, and `prompts/review.md`.
-3. Run `loom validate`.
+1. Run `loom templates list`.
+2. Run `loom init knots_sdlc`.
+3. Run `cd knots_sdlc && loom validate`.
 4. Run `loom build --lang rust`.
 5. Run `loom graph --format mermaid`.
-6. Compare the scaffold to `tests/fixtures/knots_sdlc` for a richer multi-phase example.
+6. If you want a smaller starter instead, run `loom init my_workflow` to use the default `minimal` template.
 
 Example workflow fragment:
 
@@ -176,7 +169,8 @@ params:
 
 | Command | Description |
 |---------|-------------|
-| `loom init <name>` | Scaffold a new workflow directory |
+| `loom init [--template <id>] <name>` | Scaffold a new workflow directory |
+| `loom templates list` | List bundled workflow templates |
 | `loom validate [dir]` | Parse, load prompts, validate the full graph, and print warnings |
 | `loom build [dir] --lang rust\|go\|python` | Validate and generate code |
 | `loom build [dir] --emit toml` | Emit TOML interchange output |

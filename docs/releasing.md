@@ -65,6 +65,20 @@ curl -fsSL https://raw.githubusercontent.com/acartine/loom/main/install.sh | sh
 loom --version
 ```
 
+To test installs before pushing a new release, use the local channel installer:
+
+```bash
+scripts/release/channel-install.sh local
+```
+
+That builds the local release binary, serves a temporary mock release endpoint, and runs the real [`install.sh`](/Users/cartine/loom/install.sh) against it. To stage both the published release and your local build side by side:
+
+```bash
+scripts/release/channel-install.sh release
+scripts/release/channel-install.sh local
+scripts/release/channel-use.sh show
+```
+
 ## Re-running a failed release
 
 The release workflow supports `workflow_dispatch`. If a release build fails, you can re-trigger it from the GitHub Actions UI without re-pushing the tag:

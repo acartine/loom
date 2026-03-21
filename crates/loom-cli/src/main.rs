@@ -16,13 +16,14 @@ enum Commands {
     /// Create a new workflow directory
     Init {
         /// Built-in template identifier
-        #[arg(long, default_value = "minimal")]
-        template: String,
+        #[arg(long)]
+        template: Option<String>,
 
         /// Workflow name
         name: String,
     },
     /// Inspect bundled workflow templates
+    #[command(alias = "templates")]
     Template {
         #[command(subcommand)]
         command: TemplateCommands,
@@ -113,7 +114,7 @@ fn main() -> miette::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Init { template, name } => commands::init::run(&name, &template),
+        Commands::Init { template, name } => commands::init::run(&name, template.as_deref()),
         Commands::Template { command } => match command {
             TemplateCommands::List => commands::template::list(),
         },

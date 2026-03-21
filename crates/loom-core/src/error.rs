@@ -84,7 +84,6 @@ pub enum LoomWarning {
     UnusedStep { name: String },
     SingleOutcomeAction { name: String },
     SymmetricFailureRouting { name: String, target: String },
-    EscapeNoReentry { name: String },
 }
 
 impl std::fmt::Display for LoomWarning {
@@ -109,12 +108,6 @@ impl std::fmt::Display for LoomWarning {
                 write!(
                     f,
                     "warning: all failure outcomes for '{name}' route to '{target}'"
-                )
-            }
-            LoomWarning::EscapeNoReentry { name } => {
-                write!(
-                    f,
-                    "warning: escape state '{name}' has no explicit re-entry transition"
                 )
             }
         }

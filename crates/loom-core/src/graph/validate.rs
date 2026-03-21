@@ -15,7 +15,6 @@ pub fn validate(ir: &WorkflowIR) -> Diagnostics {
     check_dead_states(ir, &graph, &mut diag);
     check_terminal_reachability(ir, &graph, &mut diag);
     check_orphaned_prompts(ir, &mut diag);
-    check_escape_reachability(ir, &graph, &mut diag);
     check_warnings(ir, &mut diag);
 
     diag
@@ -114,24 +113,6 @@ fn check_orphaned_prompts(ir: &WorkflowIR, diag: &mut Diagnostics) {
     // since we only load referenced prompts during lowering.
     // The check is done at the CLI level where we have access to the filesystem.
     let _ = (ir, diag);
-}
-
-/// Check that escape states have at least one outbound edge back to the workflow
-fn check_escape_reachability(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut Diagnostics) {
-    for (name, state) in &ir.states {
-        if !state.is_escape() {
-            continue;
-        }
-        if let Some(&idx) = graph.node_indices.get(name) {
-            let outbound = graph.graph.edges_directed(idx, Direction::Outgoing).count();
-            if outbound == 0 {
-                // Escape states with no explicit re-entry transitions.
-                // Per spec open question #4, re-entry is currently implicit,
-                // so this is a warning rather than an error.
-                diag.warn(LoomWarning::EscapeNoReentry { name: name.clone() });
-            }
-        }
-    }
 }
 
 /// Generate warnings

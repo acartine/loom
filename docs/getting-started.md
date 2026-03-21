@@ -1,6 +1,6 @@
 # Getting Started With Loom
 
-This guide takes you from a fresh clone to a validated workflow and generated code.
+This guide takes you from a fresh install to a validated workflow and generated code.
 
 ## Before you start
 
@@ -31,97 +31,121 @@ loom update
 loom update --check
 ```
 
-If you do not want to install the binary yet, replace `loom` with `cargo run -p loom-cli --` in the commands below.
+If you do not want to install the binary yet, clone the repo and replace `loom` with `cargo run -p loom-cli --` in the commands below.
 
-## 2. Validate the reference workflow
-
-Before writing your own workflow, confirm that the bundled fixture works:
+## 2. Inspect the bundled templates
 
 ```bash
-loom validate tests/fixtures/knots_sdlc
-loom graph tests/fixtures/knots_sdlc --format ascii
-loom build tests/fixtures/knots_sdlc --lang rust > /tmp/knots_workflow.rs
+loom templates list
 ```
 
-This proves the compiler, prompt loading, graph validation, and code generation pipeline are working in your environment.
+Loom ships with:
 
-## 3. Scaffold a workflow
+- `minimal`: one produce step, one review step, one phase, one default profile
+- `knots_sdlc`: planning, implementation, review, shipment, and multiple execution profiles
 
-Create a new workflow directory:
+## 3. Scaffold the full Knots SDLC workflow
+
+Create a new workflow directory from the bundled `knots_sdlc` template:
 
 ```bash
-loom init support_triage
-cd support_triage
+loom init knots_sdlc
+cd knots_sdlc
 ```
 
-The scaffold contains:
+If you want the same template under a different directory and workflow name, use:
+
+```bash
+loom init --template knots_sdlc my_team_flow
+cd my_team_flow
+```
+
+The scaffold contains the full bundled workflow package:
 
 - `workflow.loom`: the workflow definition
 - `loom.toml`: package metadata
-- `prompts/work.md`: the produce prompt with outcome routing
-- `prompts/review.md`: the gate prompt with outcome routing
+- `prompts/`: prompt files for planning, plan review, implementation, implementation review, shipment, and shipment review
+- `profiles/`: bundled profiles such as `autopilot`, `autopilot_with_pr`, and `semiauto`
 
 ## 4. Read the scaffold
 
-The generated workflow is intentionally small:
+The generated workflow is the full Knots SDLC shape:
 
 ```loom
-workflow support_triage v1 {
-    queue ready_for_work "Ready for Work"
-    queue ready_for_review "Ready for Review"
+workflow knots_sdlc v1 {
+    queue ready_for_planning              "Ready for Planning"
+    queue ready_for_plan_review           "Ready for Plan Review"
+    queue ready_for_implementation        "Ready for Implementation"
+    queue ready_for_implementation_review "Ready for Implementation Review"
+    queue ready_for_shipment              "Ready for Shipment"
+    queue ready_for_shipment_review       "Ready for Shipment Review"
 
-    action work "Work" {
+    action planning "Planning" {
         produce agent
-        prompt work
+        prompt planning
     }
 
-    action review "Review" {
-        gate review human
-        prompt review
+    action plan_review "Plan Review" {
+        gate review agent
+        prompt plan_review
     }
 
-    terminal done "Done"
-
-    step do_work {
-        ready_for_work -> work
+    action implementation "Implementation" {
+        produce agent
+        prompt implementation
     }
 
-    step review_work {
-        ready_for_review -> review
+    action implementation_review "Implementation Review" {
+        gate review agent
+        prompt implementation_review
     }
 
-    phase main {
-        produce do_work
-        gate review_work
+    action shipment "Shipment" {
+        produce agent
+        prompt shipment
     }
 
-    profile default "Default" {
-        description "Default profile"
-        phases [main]
-        output local
+    action shipment_review "Shipment Review" {
+        gate review agent
+        prompt shipment_review
+    }
+
+    terminal shipped   "Shipped"
+    terminal abandoned "Abandoned"
+    escape   deferred  "Deferred"
+
+    step plan {
+        ready_for_planning -> planning
+    }
+
+    step plan_rev {
+        ready_for_plan_review -> plan_review
+    }
+
+    step impl {
+        ready_for_implementation -> implementation
+    }
+
+    step impl_rev {
+        ready_for_implementation_review -> implementation_review
+    }
+
+    step ship {
+        ready_for_shipment -> shipment
+    }
+
+    step ship_rev {
+        ready_for_shipment_review -> shipment_review
     }
 }
 ```
 
-The produce prompt defines the first action's outcomes:
+The generated template gives you:
 
-```yaml
----
-accept:
-  - Work is complete
-  - Handoff notes are ready for review
-
-success:
-  completed: ready_for_review
-
-failure:
-  blocked: ready_for_work
-
-params: {}
----
-```
-
-The review prompt routes approval to `done` and changes back to `ready_for_work`. Loom validates all of these files together, so prompt routing errors are caught before code generation.
+- 6 steps across planning, implementation, and shipment
+- 3 phases
+- 6 execution profiles
+- prompt files that already route outcomes to valid states
 
 ## 5. Validate your workflow
 
@@ -129,12 +153,7 @@ The review prompt routes approval to `done` and changes back to `ready_for_work`
 loom validate
 ```
 
-This checks:
-
-- workflow graph structure
-- prompt outcome targets
-- profile configuration
-- unresolved references
+This checks the workflow graph, prompt outcome targets, profile configuration, and unresolved references.
 
 ## 6. Generate code
 
@@ -171,22 +190,16 @@ loom sim
 
 Use the simulator to walk the workflow and confirm that outcomes and wildcard transitions match the behavior you expect.
 
-## 9. Graduate to phases and profiles
+## 9. Start smaller if you need to
 
-The scaffold proves the basic loop. Real workflows usually add:
+If you want a tiny starter instead of the full Knots SDLC workflow:
 
-- more queue and action states
-- phases that pair produce and gate steps
-- multiple profiles such as `autopilot` and `semiauto`
-- richer prompt acceptance criteria and parameters
+```bash
+loom init my_workflow
+cd my_workflow
+```
 
-The best complete example in this repository is [`tests/fixtures/knots_sdlc`](/Users/cartine/loom/tests/fixtures/knots_sdlc). It includes:
-
-- 15 states
-- 6 steps
-- 3 phases
-- 6 execution profiles
-- prompt files for planning, implementation, review, and shipment
+That uses the default `minimal` template: one produce step, one review step, one phase, and one default profile.
 
 ## Next references
 
