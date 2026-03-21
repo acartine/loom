@@ -106,6 +106,10 @@ mod tests {
             "expected no errors, got: {:?}",
             diag.errors
         );
-        assert!(!diag.warnings.is_empty(), "expected warnings but got none");
+        assert!(
+            diag.warnings.is_empty(),
+            "expected no warnings, got: {:?}",
+            diag.warnings
+        );
     }
 }

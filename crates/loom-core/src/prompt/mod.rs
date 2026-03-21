@@ -157,7 +157,7 @@ Body text.
         let path = Path::new("../../tests/fixtures/knots_sdlc/prompts/planning.md");
         let prompt = load_prompt(path).unwrap();
         assert_eq!(prompt.success.len(), 1);
-        assert_eq!(prompt.failure.len(), 2);
+        assert_eq!(prompt.failure.len(), 3);
         assert_eq!(prompt.params.len(), 1);
         assert!(prompt.params.contains_key("complexity"));
     }
