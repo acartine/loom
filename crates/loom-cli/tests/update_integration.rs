@@ -111,6 +111,28 @@ fn handle_connection(
             Vec::new(),
         ),
         p if p == format!("/acartine/loom/releases/download/{tag}/{archive_name}") => (
+            "302 Found",
+            vec![(
+                "Location",
+                format!(
+                    "http://{}/downloads/{tag}/{archive_name}",
+                    stream.local_addr().expect("local addr")
+                ),
+            )],
+            Vec::new(),
+        ),
+        p if p == format!("/acartine/loom/releases/download/{tag}/loom-checksums.txt") => (
+            "302 Found",
+            vec![(
+                "Location",
+                format!(
+                    "http://{}/downloads/{tag}/loom-checksums.txt",
+                    stream.local_addr().expect("local addr")
+                ),
+            )],
+            Vec::new(),
+        ),
+        p if p == format!("/downloads/{tag}/{archive_name}") => (
             "200 OK",
             vec![("Content-Type", "application/gzip".to_owned())],
             if method == "HEAD" {
@@ -119,7 +141,7 @@ fn handle_connection(
                 archive_bytes.to_vec()
             },
         ),
-        p if p == format!("/acartine/loom/releases/download/{tag}/loom-checksums.txt") => (
+        p if p == format!("/downloads/{tag}/loom-checksums.txt") => (
             "200 OK",
             vec![("Content-Type", "text/plain".to_owned())],
             if method == "HEAD" {
@@ -175,7 +197,7 @@ fn command_env<'a>(command: &'a mut Command, base_url: &str) -> &'a mut Command 
 }
 
 #[test]
-fn update_check_reports_available_version() {
+fn update_check_reports_available_version_through_redirect_chain() {
     let install = TestInstall::new();
     let archive_name = "loom-x86_64-unknown-linux-musl.tar.gz";
     let archive_bytes = make_release_archive(b"#!/bin/sh\necho updated\n");
@@ -260,6 +282,41 @@ fn update_force_reinstalls_current_version() {
 
     let updated = fs::read(&install.executable).expect("read updated binary");
     assert_eq!(updated, replacement);
+}
+
+#[test]
+fn update_succeeds_through_github_redirect_chain() {
+    let install = TestInstall::new();
+    let archive_name = "loom-x86_64-unknown-linux-musl.tar.gz";
+    let replacement = b"#!/bin/sh\necho redirected-update\n";
+    let archive_bytes = make_release_archive(replacement);
+    let checksums = format!("{}  {}\n", sha256_hex(&archive_bytes), archive_name);
+    let server = StubReleaseServer::start(
+        "v9.9.9",
+        archive_name,
+        archive_bytes,
+        checksums.into_bytes(),
+    );
+
+    let output = command_env(&mut Command::new(&install.executable), &server.base_url())
+        .args(["update", "--force"])
+        .output()
+        .expect("run loom update --force");
+
+    assert!(
+        output.status.success(),
+        "update --force failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("Updated loom to v9.9.9"),
+        "stdout: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert_eq!(
+        fs::read(&install.executable).expect("read updated binary"),
+        replacement
+    );
 }
 
 #[test]

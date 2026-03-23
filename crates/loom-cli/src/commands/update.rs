@@ -73,12 +73,10 @@ pub fn run(check: bool, force: bool) -> miette::Result<()> {
     let archive_path = tmpdir.path().join(&target.archive_name);
     let checksums_path = tmpdir.path().join(CHECKSUM_FILE);
 
-    let resolved_archive_url = download_to_path(&client, &urls.archive_url, &archive_path)
+    let tagged_urls = release_urls(&release_base_url(), &target, Some(&latest_tag));
+    download_to_path(&client, &tagged_urls.archive_url, &archive_path)
         .wrap_err("failed to download release archive")?;
-    let resolved_tag = parse_release_tag_from_url(resolved_archive_url.as_str())
-        .wrap_err("failed to infer resolved release version from redirected archive URL")?;
-    let checksum_urls = release_urls(&release_base_url(), &target, Some(&resolved_tag));
-    download_to_path(&client, &checksum_urls.checksums_url, &checksums_path)
+    download_to_path(&client, &tagged_urls.checksums_url, &checksums_path)
         .wrap_err("failed to download release checksums")?;
 
     verify_checksum(&archive_path, &target.archive_name, &checksums_path)?;
@@ -87,7 +85,7 @@ pub fn run(check: bool, force: bool) -> miette::Result<()> {
     install_binary(&extracted_binary, &executable)?;
 
     println!(
-        "Updated {BIN_NAME} to {resolved_tag} at {}",
+        "Updated {BIN_NAME} to {latest_tag} at {}",
         executable.display()
     );
     Ok(())
@@ -201,7 +199,7 @@ fn normalize_version(raw: &str) -> miette::Result<Version> {
     Version::parse(raw.trim_start_matches('v')).into_diagnostic()
 }
 
-fn download_to_path(client: &Client, url: &str, destination: &Path) -> miette::Result<String> {
+fn download_to_path(client: &Client, url: &str, destination: &Path) -> miette::Result<()> {
     let mut response = client.get(url).send().into_diagnostic()?;
     if !response.status().is_success() {
         return Err(miette::miette!(
@@ -210,10 +208,9 @@ fn download_to_path(client: &Client, url: &str, destination: &Path) -> miette::R
         ));
     }
 
-    let final_url = response.url().to_string();
     let mut file = File::create(destination).into_diagnostic()?;
     io::copy(&mut response, &mut file).into_diagnostic()?;
-    Ok(final_url)
+    Ok(())
 }
 
 fn verify_checksum(
