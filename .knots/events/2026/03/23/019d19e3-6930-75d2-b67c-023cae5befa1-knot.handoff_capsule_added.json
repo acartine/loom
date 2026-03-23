@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e3-6930-75d2-b67c-023cae5befa1",
+  "occurred_at": "2026-03-23T08:50:27.248568Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Plan addresses both the primary bug (reqwest follows full redirect chain to CDN, losing the release tag URL) and the latent bug (root-relative Location header resolution). Fix: use a no-redirect client in resolve_latest_tag() to stop at the first 3xx hop, and fix redirected_location() to properly resolve root-relative paths using url::Url::join(). All changes in one file (update.rs) with new unit tests. Ready for plan review.",
+    "datetime": "2026-03-23T08:50:27.248568Z",
+    "entry_id": "019d19e3-6930-75d2-b67c-0223a6bef00e",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
