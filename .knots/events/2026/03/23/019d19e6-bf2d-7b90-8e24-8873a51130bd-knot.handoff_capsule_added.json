@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e6-bf2d-7b90-8e24-8873a51130bd",
+  "occurred_at": "2026-03-23T08:54:05.868806Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "## Implementation Summary\n\n**Branch**: `fix/loom-update-redirect`\n**Commit**: `5802ca26b650`\n\n### Changes (single file: `crates/loom-cli/src/commands/update.rs`)\n\n**Bug 1 (primary)**: `resolve_latest_tag()` now builds a no-redirect client (`Policy::none()`) instead of reusing the main client that follows the full redirect chain. This stops at the first 3xx redirect where GitHub resolves `/releases/latest/download/...` → `/releases/download/{tag}/...`, before the second hop to the CDN URL that lacks the `/download/` segment.\n\n**Bug 2 (latent)**: `redirected_location()` now uses `reqwest::Url::parse(base).join(location)` for non-absolute Location headers, correctly resolving root-relative paths (e.g., `/acartine/loom/...`) against the origin instead of naively concatenating them.\n\n**Removed**: `final_url()` helper and unused `Response` import — no longer needed since we don't inspect the final URL of a followed redirect chain.\n\n### Tests added\n- `parse_release_tag_fails_for_cdn_url` — documents why CDN URLs fail parsing\n- `redirected_location_resolves_absolute_url` — absolute Location header\n- `redirected_location_resolves_root_relative_path` — root-relative Location header  \n- `redirected_location_returns_none_without_header` — missing header\n\n### Verification\n- All 9 unit tests pass\n- All 4 integration tests pass (including update_force_reinstalls_current_version which exercises the full update flow via mock server)\n- Clean build with no warnings",
+    "datetime": "2026-03-23T08:54:05.868806Z",
+    "entry_id": "019d19e6-bf2c-7a31-8161-ef2dcf8c14bc",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}

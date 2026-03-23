@@ -1,0 +1,19 @@
+{
+  "event_id": "019d19e5-35da-7780-b3c9-03bb0f934f72",
+  "occurred_at": "2026-03-23T08:52:25.178811Z",
+  "knot_id": "loom-2946",
+  "type": "knot.lease_data_set",
+  "data": {
+    "lease_data": {
+      "agent_info": {
+        "agent_name": "Claude",
+        "agent_type": "",
+        "model": "opus/claude",
+        "model_version": "4.6",
+        "provider": ""
+      },
+      "lease_type": "agent",
+      "nickname": "foolery:terminal_manager_take:term-1774255491739-hc8wv5"
+    }
+  }
+}
