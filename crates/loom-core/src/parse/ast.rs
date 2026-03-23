@@ -24,15 +24,16 @@ pub enum Declaration {
 #[derive(Debug, Clone)]
 pub struct QueueDecl {
     pub name: String,
-    pub display_name: String,
+    pub display_name: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct ActionDecl {
     pub name: String,
-    pub display_name: String,
+    pub display_name: Option<String>,
     pub action_type: ActionType,
-    pub prompt: String,
+    pub prompt: Option<String>,
+    pub output: Option<ActionOutput>,
     pub constraints: Vec<Constraint>,
 }
 
@@ -53,6 +54,12 @@ pub enum GateKind {
 pub enum Executor {
     Agent,
     Human,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActionOutput {
+    pub artifact_type: String,
+    pub access_hint: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,7 +84,7 @@ pub struct EscapeDecl {
 #[derive(Debug, Clone)]
 pub struct StepDecl {
     pub name: String,
-    pub queue: String,
+    pub queue: Option<String>,
     pub action: String,
 }
 
@@ -98,23 +105,15 @@ pub struct ProfileDecl {
 #[derive(Debug, Clone)]
 pub enum ProfileField {
     Phases(Vec<String>),
-    Output(OutputKind),
     Override(OverrideDecl),
     Description(String),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OutputKind {
-    Local,
-    Remote,
-    RemoteMain,
-    Pr,
 }
 
 #[derive(Debug, Clone)]
 pub struct OverrideDecl {
     pub action: String,
-    pub executor: Executor,
+    pub executor: Option<Executor>,
+    pub output: Option<ActionOutput>,
 }
 
 #[derive(Debug, Clone)]

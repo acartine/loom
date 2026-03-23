@@ -1,5 +1,5 @@
 use crate::ir::{StateDef, WorkflowIR};
-use crate::parse::ast::{Executor, OutputKind};
+use crate::parse::ast::Executor;
 use crate::prompt::ParamType;
 
 /// Generate Python code from the workflow IR
@@ -18,7 +18,6 @@ pub fn generate(ir: &WorkflowIR) -> String {
 
     generate_state_enum(ir, &mut out);
     generate_executor_enum(&mut out);
-    generate_output_kind_enum(&mut out);
     generate_outcome_enums(ir, &mut out);
     generate_outcome_union(ir, &mut out);
     generate_transition_fn(ir, &mut out);
@@ -89,15 +88,6 @@ fn generate_executor_enum(out: &mut String) {
     out.push_str("class Executor(Enum):\n");
     out.push_str("    AGENT = 0\n");
     out.push_str("    HUMAN = 1\n");
-    out.push_str("\n\n");
-}
-
-fn generate_output_kind_enum(out: &mut String) {
-    out.push_str("class OutputKind(Enum):\n");
-    out.push_str("    LOCAL = 0\n");
-    out.push_str("    REMOTE = 1\n");
-    out.push_str("    REMOTE_MAIN = 2\n");
-    out.push_str("    PR = 3\n");
     out.push_str("\n\n");
 }
 
@@ -272,64 +262,90 @@ fn generate_profile_class(ir: &WorkflowIR, out: &mut String) {
     out.push_str("    id: str\n");
     out.push_str("    description: str\n");
     out.push_str("    phases: tuple[str, ...]\n");
-    out.push_str("    output: OutputKind\n");
+    out.push_str("    outputs: tuple[tuple[State, str], ...]\n");
     out.push_str("    executors: tuple[tuple[State, Executor], ...]\n");
     out.push_str("\n\n");
 
     for profile in ir.profiles.values() {
-        let var_name = profile.name.to_uppercase();
-        let desc = profile.description.as_deref().unwrap_or("");
-        let output = match profile.output.unwrap_or(OutputKind::Local) {
-            OutputKind::Local => "OutputKind.LOCAL",
-            OutputKind::Remote => "OutputKind.REMOTE",
-            OutputKind::RemoteMain => "OutputKind.REMOTE_MAIN",
-            OutputKind::Pr => "OutputKind.PR",
-        };
+        generate_single_python_profile(ir, profile, out);
+    }
+    out.push('\n');
+}
 
-        out.push_str(&format!("{} = Profile(\n", var_name));
-        out.push_str(&format!("    id=\"{}\",\n", profile.name));
-        out.push_str(&format!("    description=\"{}\",\n", desc));
+fn generate_single_python_profile(
+    ir: &WorkflowIR,
+    profile: &crate::ir::ProfileDef,
+    out: &mut String,
+) {
+    let var_name = profile.name.to_uppercase();
+    let desc = profile.description.as_deref().unwrap_or("");
 
-        // Phases
-        out.push_str("    phases=(");
-        for phase in &profile.phases {
-            out.push_str(&format!("\"{}\", ", phase));
-        }
-        out.push_str("),\n");
+    out.push_str(&format!("{} = Profile(\n", var_name));
+    out.push_str(&format!("    id=\"{}\",\n", profile.name));
+    out.push_str(&format!("    description=\"{}\",\n", desc));
 
-        out.push_str(&format!("    output={},\n", output));
+    // Phases
+    out.push_str("    phases=(");
+    for phase in &profile.phases {
+        out.push_str(&format!("\"{}\", ", phase));
+    }
+    out.push_str("),\n");
 
-        // Executor overrides
-        out.push_str("    executors=(");
-        for phase_name in &profile.phases {
-            if let Some(phase) = ir.phases.get(phase_name) {
-                for step_name in [&phase.produce_step, &phase.gate_step] {
-                    if let Some(step) = ir.steps.get(step_name) {
-                        if let Some(state) = ir.states.get(&step.action) {
-                            let executor = profile
-                                .overrides
-                                .get(&step.action)
-                                .copied()
-                                .or_else(|| state.executor())
-                                .unwrap_or(Executor::Agent);
-                            let exec_str = match executor {
-                                Executor::Agent => "Executor.AGENT",
-                                Executor::Human => "Executor.HUMAN",
-                            };
+    // Outputs
+    out.push_str("    outputs=(");
+    for phase_name in &profile.phases {
+        if let Some(phase) = ir.phases.get(phase_name) {
+            for step_name in [&phase.produce_step, &phase.gate_step] {
+                if let Some(step) = ir.steps.get(step_name) {
+                    if let Some(state) = ir.states.get(&step.action) {
+                        let output = profile
+                            .overrides
+                            .get(&step.action)
+                            .and_then(|o| o.output.as_ref())
+                            .or_else(|| state.output());
+                        if let Some(o) = output {
                             out.push_str(&format!(
-                                "(State.{}, {}), ",
+                                "(State.{}, \"{}\"), ",
                                 to_upper_snake(&step.action),
-                                exec_str
+                                o.artifact_type
                             ));
                         }
                     }
                 }
             }
         }
-        out.push_str("),\n");
-        out.push_str(")\n\n");
     }
-    out.push('\n');
+    out.push_str("),\n");
+
+    // Executor overrides
+    out.push_str("    executors=(");
+    for phase_name in &profile.phases {
+        if let Some(phase) = ir.phases.get(phase_name) {
+            for step_name in [&phase.produce_step, &phase.gate_step] {
+                if let Some(step) = ir.steps.get(step_name) {
+                    if let Some(state) = ir.states.get(&step.action) {
+                        let executor = profile
+                            .overrides
+                            .get(&step.action)
+                            .and_then(|o| o.executor)
+                            .or_else(|| state.executor())
+                            .unwrap_or(Executor::Agent);
+                        let exec_str = match executor {
+                            Executor::Agent => "Executor.AGENT",
+                            Executor::Human => "Executor.HUMAN",
+                        };
+                        out.push_str(&format!(
+                            "(State.{}, {}), ",
+                            to_upper_snake(&step.action),
+                            exec_str
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    out.push_str("),\n");
+    out.push_str(")\n\n");
 }
 
 fn generate_prompt_metadata(ir: &WorkflowIR, out: &mut String) {
@@ -434,9 +450,9 @@ mod tests {
         assert!(code.contains("def target(self) -> State:"));
         assert!(code.contains("def is_success(self) -> bool:"));
 
-        // Executor and OutputKind
+        // Executor
         assert!(code.contains("class Executor(Enum):"));
-        assert!(code.contains("class OutputKind(Enum):"));
+        assert!(!code.contains("class OutputKind(Enum):"));
 
         // Profile
         assert!(code.contains("AUTOPILOT = Profile("));

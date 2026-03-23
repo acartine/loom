@@ -118,24 +118,19 @@ Example workflow fragment:
 
 ```loom
 workflow my_workflow v1 {
-    queue ready_for_planning "Ready for Planning"
-    queue ready_for_review   "Ready for Review"
-
-    action planning "Planning" {
+    action planning {
         produce agent
-        prompt planning
     }
 
-    action review "Review" {
+    action review {
         gate review agent
-        prompt review
     }
 
-    terminal done      "Done"
-    escape   deferred  "Deferred"
+    terminal done
+    escape   deferred
 
-    step plan     { ready_for_planning -> planning }
-    step plan_rev { ready_for_review   -> review }
+    step plan -> planning
+    step plan_rev -> review
 
     phase main_phase {
         produce plan

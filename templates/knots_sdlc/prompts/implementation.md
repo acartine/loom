@@ -13,12 +13,7 @@ failure:
   implementation_infeasible: ready_for_planning
   merge_conflict: ready_for_implementation
 
-params:
-  output_kind:
-    type: enum
-    values: ["local", "remote", "remote_main", "pr"]
-    required: true
-    description: Artifact output type from the profile
+params: {}
 ---
 
 # Implementation
@@ -31,9 +26,10 @@ Implement the approved plan on a feature branch.
 2. Implement changes following the plan while respecting all invariants
 3. Write tests for all new behavior
 4. Commit and push the feature branch
+5. If output is `pr`, open or update a pull request
 
 ## Output
 
-- Working implementation on feature branch
-- All tests passing with coverage threshold met
-- Handoff capsule with implementation summary
+The expected output artifact is `{{ output }}`:
+- **branch**: a feature branch pushed to remote
+- **pr**: a pull request opened from the feature branch

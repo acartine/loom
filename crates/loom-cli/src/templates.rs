@@ -27,28 +27,18 @@ default_profile = "default"
         relative_path: "workflow.loom",
         contents: r#"workflow __WORKFLOW_NAME__ v1 {
 
-    queue ready_for_work "Ready for Work"
-    queue ready_for_review "Ready for Review"
-
-    action work "Work" {
+    action work {
         produce agent
-        prompt work
     }
 
-    action review "Review" {
+    action review {
         gate review human
-        prompt review
     }
 
-    terminal done "Done"
+    terminal done
 
-    step do_work {
-        ready_for_work -> work
-    }
-
-    step review_work {
-        ready_for_review -> review
-    }
+    step do_work -> work
+    step review_work -> review
 
     phase main {
         produce do_work
@@ -58,7 +48,6 @@ default_profile = "default"
     profile default "Default" {
         description "Default profile"
         phases [main]
-        output local
     }
 }
 "#,

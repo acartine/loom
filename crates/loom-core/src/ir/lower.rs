@@ -31,6 +31,7 @@ pub fn lower_with_config(
     let mut wildcard_targets: Vec<String> = Vec::new();
     let mut prompts: IndexMap<String, prompt::PromptFile> = IndexMap::new();
     let mut action_prompt_refs: Vec<(String, String)> = Vec::new();
+    let mut synthesized_queues: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     // Phase 1: Register all declarations
     for decl in &ast.declarations {
@@ -41,11 +42,15 @@ pub fn lower_with_config(
                         name: q.name.clone(),
                     });
                 } else {
+                    let display_name = q
+                        .display_name
+                        .clone()
+                        .unwrap_or_else(|| crate::snake_to_title_case(&q.name));
                     states.insert(
                         q.name.clone(),
                         StateDef::Queue {
                             name: q.name.clone(),
-                            display_name: q.display_name.clone(),
+                            display_name,
                         },
                     );
                 }
@@ -59,18 +64,24 @@ pub fn lower_with_config(
                     let executor = match &a.action_type {
                         ActionType::Produce(e) | ActionType::Gate(_, e) => *e,
                     };
+                    let display_name = a
+                        .display_name
+                        .clone()
+                        .unwrap_or_else(|| crate::snake_to_title_case(&a.name));
+                    let prompt_name = a.prompt.clone().unwrap_or_else(|| a.name.clone());
                     states.insert(
                         a.name.clone(),
                         StateDef::Action {
                             name: a.name.clone(),
-                            display_name: a.display_name.clone(),
+                            display_name,
                             action_type: a.action_type.clone(),
-                            prompt_name: a.prompt.clone(),
+                            prompt_name: prompt_name.clone(),
+                            output: a.output.clone(),
                             constraints: a.constraints.clone(),
                             executor,
                         },
                     );
-                    action_prompt_refs.push((a.name.clone(), a.prompt.clone()));
+                    action_prompt_refs.push((a.name.clone(), prompt_name));
                 }
             }
             Declaration::Terminal(t) => {
@@ -104,6 +115,34 @@ pub fn lower_with_config(
                 }
             }
             Declaration::Step(s) => {
+                let queue_name = match &s.queue {
+                    Some(q) => q.clone(),
+                    None => format!("ready_for_{}", s.action),
+                };
+
+                // Synthesize queue state if using shorthand form
+                if s.queue.is_none() {
+                    if states.contains_key(&queue_name) && !synthesized_queues.contains(&queue_name)
+                    {
+                        diag.error(LoomError::DuplicateIdentifier {
+                            name: queue_name.clone(),
+                        });
+                    } else if !states.contains_key(&queue_name) {
+                        let queue_display = format!(
+                            "Ready for {}",
+                            crate::snake_to_title_case(&s.action)
+                        );
+                        states.insert(
+                            queue_name.clone(),
+                            StateDef::Queue {
+                                name: queue_name.clone(),
+                                display_name: queue_display,
+                            },
+                        );
+                        synthesized_queues.insert(queue_name.clone());
+                    }
+                }
+
                 if steps.contains_key(&s.name) {
                     diag.error(LoomError::DuplicateIdentifier {
                         name: s.name.clone(),
@@ -113,7 +152,7 @@ pub fn lower_with_config(
                         s.name.clone(),
                         StepDef {
                             name: s.name.clone(),
-                            queue: s.queue.clone(),
+                            queue: queue_name,
                             action: s.action.clone(),
                         },
                     );
@@ -317,8 +356,24 @@ pub fn lower_with_config(
     }
 
     // Check parameter consistency
+    // `output` and `output_hint` are implicit params for produce actions —
+    // they are injected by the runtime from the action's output declaration.
+    let produce_prompts: std::collections::HashSet<&str> = action_prompt_refs
+        .iter()
+        .filter(|(action_name, _)| {
+            states
+                .get(action_name)
+                .is_some_and(|s| s.is_produce())
+        })
+        .map(|(_, prompt_name)| prompt_name.as_str())
+        .collect();
+
     for (prompt_name, pf) in &prompts {
+        let is_produce = produce_prompts.contains(prompt_name.as_str());
         for param in &pf.body_params {
+            if is_produce && (param == "output" || param == "output_hint") {
+                continue;
+            }
             if !pf.params.contains_key(param) {
                 diag.error(LoomError::UndeclaredParam {
                     prompt: prompt_name.clone(),
@@ -433,16 +488,20 @@ fn register_profile(
         display_name: p.display_name.clone(),
         description: None,
         phases: Vec::new(),
-        output: None,
         overrides: IndexMap::new(),
     };
 
     for field in &p.fields {
         match field {
             ProfileField::Phases(phases) => def.phases = phases.clone(),
-            ProfileField::Output(kind) => def.output = Some(*kind),
             ProfileField::Override(o) => {
-                def.overrides.insert(o.action.clone(), o.executor);
+                def.overrides.insert(
+                    o.action.clone(),
+                    ActionOverride {
+                        executor: o.executor,
+                        output: o.output.clone(),
+                    },
+                );
             }
             ProfileField::Description(d) => def.description = Some(d.clone()),
         }
@@ -543,7 +602,6 @@ mod tests {
                 phase p1 { produce s1 gate s2 }
                 profile test_profile {
                     phases [p1]
-                    output local
                     override a3 { executor human }
                 }
             }
@@ -562,7 +620,6 @@ mod tests {
                 terminal done
                 profile real_profile {
                     phases []
-                    output local
                 }
             }
         "#;
@@ -701,7 +758,6 @@ Do the thing.
                 queue q1 "Q1"
                 profile p1 {
                     phases [nonexistent_phase]
-                    output local
                 }
             }
         "#;
@@ -909,8 +965,8 @@ Color {{ color }}.
         let src = r#"
             workflow test v1 {
                 queue q1 "Q1"
-                profile p1 { phases [] output local }
-                profile p1 { phases [] output local }
+                profile p1 { phases [] }
+                profile p1 { phases [] }
             }
         "#;
         let err = lower_inline(src).unwrap_err();

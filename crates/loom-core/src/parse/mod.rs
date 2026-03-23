@@ -78,38 +78,56 @@ fn build_declaration(pair: pest::iterators::Pair<Rule>) -> LoomResult<Declaratio
 fn build_queue(pair: pest::iterators::Pair<Rule>) -> LoomResult<QueueDecl> {
     let mut inner = pair.into_inner();
     let name = inner.next().unwrap().as_str().to_string();
-    let display_name = strip_quotes(inner.next().unwrap().as_str());
+    let display_name = inner.next().map(|p| strip_quotes(p.as_str()));
     Ok(QueueDecl { name, display_name })
 }
 
 fn build_action(pair: pest::iterators::Pair<Rule>) -> LoomResult<ActionDecl> {
     let mut inner = pair.into_inner();
     let name = inner.next().unwrap().as_str().to_string();
-    let display_name = strip_quotes(inner.next().unwrap().as_str());
-    let body_pair = inner.next().unwrap();
+
+    // Display name is optional — detect by checking if next token is a string or action_body
+    let mut display_name = None;
+    let next = inner.next().unwrap();
+    let body_pair = if next.as_rule() == Rule::string {
+        display_name = Some(strip_quotes(next.as_str()));
+        inner.next().unwrap()
+    } else {
+        next
+    };
+
     let mut body_inner = body_pair.into_inner();
+    let action_type = build_action_type(body_inner.next().unwrap())?;
 
-    let action_type_pair = body_inner.next().unwrap();
-    let action_type = build_action_type(action_type_pair)?;
-
-    let prompt_pair = body_inner.next().unwrap();
-    let prompt = prompt_pair
-        .into_inner()
-        .next()
-        .unwrap()
-        .as_str()
-        .to_string();
-
+    // Prompt ref, output ref, and constraints are all optional
+    let mut prompt = None;
+    let mut output = None;
     let mut constraints = Vec::new();
-    for constraint_pair in body_inner {
-        if constraint_pair.as_rule() == Rule::constraint {
-            let kind_pair = constraint_pair.into_inner().next().unwrap();
-            constraints.push(match kind_pair.as_str() {
-                "read_only" => Constraint::ReadOnly,
-                "no_git_write" => Constraint::NoGitWrite,
-                "metadata_only" => Constraint::MetadataOnly,
-                _ => unreachable!(),
-            });
+
+    for item in body_inner {
+        match item.as_rule() {
+            Rule::prompt_ref => {
+                prompt = Some(item.into_inner().next().unwrap().as_str().to_string());
+            }
+            Rule::output_ref => {
+                let mut oi = item.into_inner();
+                let artifact_type = oi.next().unwrap().as_str().to_string();
+                let access_hint = oi.next().map(|p| strip_quotes(p.as_str()));
+                output = Some(ActionOutput {
+                    artifact_type,
+                    access_hint,
+                });
+            }
+            Rule::constraint => {
+                let kind_pair = item.into_inner().next().unwrap();
+                constraints.push(match kind_pair.as_str() {
+                    "read_only" => Constraint::ReadOnly,
+                    "no_git_write" => Constraint::NoGitWrite,
+                    "metadata_only" => Constraint::MetadataOnly,
+                    _ => unreachable!(),
+                });
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -118,6 +136,7 @@ fn build_action(pair: pest::iterators::Pair<Rule>) -> LoomResult<ActionDecl> {
         display_name,
         action_type,
         prompt,
+        output,
         constraints,
     })
 }
@@ -169,13 +188,25 @@ fn build_escape(pair: pest::iterators::Pair<Rule>) -> LoomResult<EscapeDecl> {
 fn build_step(pair: pest::iterators::Pair<Rule>) -> LoomResult<StepDecl> {
     let mut inner = pair.into_inner();
     let name = inner.next().unwrap().as_str().to_string();
-    let queue = inner.next().unwrap().as_str().to_string();
-    let action = inner.next().unwrap().as_str().to_string();
-    Ok(StepDecl {
-        name,
-        queue,
-        action,
-    })
+    let second = inner.next().unwrap().as_str().to_string();
+    match inner.next() {
+        Some(third) => {
+            // Explicit form: step X { Q -> Y }
+            Ok(StepDecl {
+                name,
+                queue: Some(second),
+                action: third.as_str().to_string(),
+            })
+        }
+        None => {
+            // Shorthand form: step X -> Y (queue derived during lowering)
+            Ok(StepDecl {
+                name,
+                queue: None,
+                action: second,
+            })
+        }
+    }
 }
 
 fn build_phase(pair: pest::iterators::Pair<Rule>) -> LoomResult<PhaseDecl> {
@@ -216,26 +247,39 @@ fn build_profile(pair: pest::iterators::Pair<Rule>) -> LoomResult<ProfileDecl> {
                                 .collect();
                             fields.push(ProfileField::Phases(phases));
                         }
-                        Rule::profile_output => {
-                            let kind = field_inner.into_inner().next().unwrap();
-                            let output = match kind.as_str() {
-                                "local" => OutputKind::Local,
-                                "remote" => OutputKind::Remote,
-                                "remote_main" => OutputKind::RemoteMain,
-                                "pr" => OutputKind::Pr,
-                                _ => unreachable!(),
-                            };
-                            fields.push(ProfileField::Output(output));
-                        }
                         Rule::profile_override => {
                             let mut oi = field_inner.into_inner();
                             let action = oi.next().unwrap().as_str().to_string();
                             let body = oi.next().unwrap(); // override_body
-                            let field = body.into_inner().next().unwrap(); // override_field
-                            let exec_override = field.into_inner().next().unwrap(); // executor_override
-                            let exec_pair = exec_override.into_inner().next().unwrap(); // executor
-                            let executor = build_executor(exec_pair);
-                            fields.push(ProfileField::Override(OverrideDecl { action, executor }));
+                            let mut executor = None;
+                            let mut output = None;
+                            for field in body.into_inner() {
+                                let override_field = field.into_inner().next().unwrap();
+                                match override_field.as_rule() {
+                                    Rule::executor_override => {
+                                        let exec_pair =
+                                            override_field.into_inner().next().unwrap();
+                                        executor = Some(build_executor(exec_pair));
+                                    }
+                                    Rule::output_override => {
+                                        let mut out_inner = override_field.into_inner();
+                                        let artifact_type =
+                                            out_inner.next().unwrap().as_str().to_string();
+                                        let access_hint =
+                                            out_inner.next().map(|p| strip_quotes(p.as_str()));
+                                        output = Some(ActionOutput {
+                                            artifact_type,
+                                            access_hint,
+                                        });
+                                    }
+                                    _ => unreachable!(),
+                                }
+                            }
+                            fields.push(ProfileField::Override(OverrideDecl {
+                                action,
+                                executor,
+                                output,
+                            }));
                         }
                         Rule::profile_description => {
                             let desc =
@@ -305,7 +349,7 @@ mod tests {
         if let Declaration::Action(a) = &wf.declarations[0] {
             assert_eq!(a.name, "planning");
             assert_eq!(a.action_type, ActionType::Produce(Executor::Agent));
-            assert_eq!(a.prompt, "planning");
+            assert_eq!(a.prompt, Some("planning".to_string()));
             assert_eq!(a.constraints, vec![Constraint::ReadOnly]);
         } else {
             panic!("expected action");
@@ -345,7 +389,7 @@ mod tests {
         let wf = parse_workflow(input).unwrap();
         if let Declaration::Step(s) = &wf.declarations[0] {
             assert_eq!(s.name, "plan");
-            assert_eq!(s.queue, "q1");
+            assert_eq!(s.queue, Some("q1".to_string()));
             assert_eq!(s.action, "a1");
         } else {
             panic!("expected step");
@@ -379,7 +423,6 @@ mod tests {
                 profile auto "Autopilot" {
                     description "Full auto"
                     phases [p1, p2]
-                    output remote_main
                     override review {
                         executor human
                     }
@@ -390,7 +433,7 @@ mod tests {
         if let Declaration::Profile(p) = &wf.declarations[0] {
             assert_eq!(p.name, "auto");
             assert_eq!(p.display_name, Some("Autopilot".to_string()));
-            assert_eq!(p.fields.len(), 4);
+            assert_eq!(p.fields.len(), 3);
         } else {
             panic!("expected profile");
         }
@@ -418,8 +461,8 @@ mod tests {
         let wf = parse_workflow(&input).unwrap();
         assert_eq!(wf.name, "knots_sdlc");
         assert_eq!(wf.version, 1);
-        // 6 queues + 6 actions + 2 terminals + 1 escape + 2 wildcards + 6 steps + 3 phases + 6 includes = 32
-        assert_eq!(wf.declarations.len(), 32);
+        // 6 actions + 2 terminals + 1 escape + 2 wildcards + 6 steps + 3 phases + 6 includes = 26
+        assert_eq!(wf.declarations.len(), 26);
     }
 
     #[test]

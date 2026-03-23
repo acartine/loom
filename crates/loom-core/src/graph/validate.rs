@@ -240,6 +240,7 @@ mod tests {
                 display_name: "A1".into(),
                 action_type: ActionType::Produce(Executor::Agent),
                 prompt_name: "a1_prompt".into(),
+                output: None,
                 constraints: vec![],
                 executor: Executor::Agent,
             },
@@ -261,6 +262,7 @@ mod tests {
                     Executor::Human,
                 ),
                 prompt_name: "a2_prompt".into(),
+                output: None,
                 constraints: vec![],
                 executor: Executor::Human,
             },
@@ -309,7 +311,6 @@ mod tests {
                 display_name: None,
                 description: None,
                 phases: vec!["p1".into()],
-                output: None,
                 overrides: IndexMap::new(),
             },
         );

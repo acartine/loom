@@ -33,13 +33,15 @@ pub fn extract_profile_subgraph(ir: &WorkflowIR, profile_name: &str) -> Option<W
                     if let Some(state) = ir.states.get(&step.action) {
                         let mut state = state.clone();
                         // Apply executor overrides
-                        if let Some(&executor) = profile.overrides.get(state.name()) {
-                            if let StateDef::Action {
-                                executor: ref mut e,
-                                ..
-                            } = state
-                            {
-                                *e = executor;
+                        if let Some(overr) = profile.overrides.get(state.name()) {
+                            if let Some(executor) = overr.executor {
+                                if let StateDef::Action {
+                                    executor: ref mut e,
+                                    ..
+                                } = state
+                                {
+                                    *e = executor;
+                                }
                             }
                         }
                         // Collect prompt

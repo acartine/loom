@@ -13,6 +13,21 @@ use error::{Diagnostics, LoomError};
 use ir::WorkflowIR;
 use std::path::Path;
 
+/// Convert a snake_case identifier to Title Case display name.
+/// e.g. "plan_review" → "Plan Review", "shipment" → "Shipment"
+pub(crate) fn snake_to_title_case(s: &str) -> String {
+    s.split('_')
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Load and compile a workflow from a directory path.
 /// This is the main entry point for the library.
 pub fn load_workflow(workflow_dir: &Path) -> Result<(WorkflowIR, Diagnostics), Vec<LoomError>> {

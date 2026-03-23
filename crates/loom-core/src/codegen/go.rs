@@ -1,5 +1,5 @@
 use crate::ir::{StateDef, WorkflowIR};
-use crate::parse::ast::{Executor, OutputKind};
+use crate::parse::ast::Executor;
 use crate::prompt::ParamType;
 
 /// Generate Go code from the workflow IR
@@ -15,7 +15,6 @@ pub fn generate(ir: &WorkflowIR) -> String {
 
     generate_state_type(ir, &mut out);
     generate_executor_type(&mut out);
-    generate_output_kind_type(&mut out);
     generate_outcome_types(ir, &mut out);
     generate_outcome_union(ir, &mut out);
     generate_apply_fn(ir, &mut out);
@@ -95,16 +94,6 @@ fn generate_executor_type(out: &mut String) {
     out.push_str("const (\n");
     out.push_str("\tAgent Executor = iota\n");
     out.push_str("\tHuman\n");
-    out.push_str(")\n\n");
-}
-
-fn generate_output_kind_type(out: &mut String) {
-    out.push_str("type OutputKind int\n\n");
-    out.push_str("const (\n");
-    out.push_str("\tLocal OutputKind = iota\n");
-    out.push_str("\tRemote\n");
-    out.push_str("\tRemoteMain\n");
-    out.push_str("\tPr\n");
     out.push_str(")\n\n");
 }
 
@@ -256,7 +245,7 @@ fn generate_profile_struct(out: &mut String) {
     out.push_str("\tID          string\n");
     out.push_str("\tDescription string\n");
     out.push_str("\tPhases      []string\n");
-    out.push_str("\tOutput      OutputKind\n");
+    out.push_str("\tOutputs     map[State]string\n");
     out.push_str("\tExecutors   map[State]Executor\n");
     out.push_str("}\n\n");
 }
@@ -264,12 +253,6 @@ fn generate_profile_struct(out: &mut String) {
 fn generate_single_profile(ir: &WorkflowIR, profile: &crate::ir::ProfileDef, out: &mut String) {
     let var_name = format!("Profile{}", to_pascal_case(&profile.name));
     let desc = profile.description.as_deref().unwrap_or("");
-    let output = match profile.output.unwrap_or(OutputKind::Local) {
-        OutputKind::Local => "Local",
-        OutputKind::Remote => "Remote",
-        OutputKind::RemoteMain => "RemoteMain",
-        OutputKind::Pr => "Pr",
-    };
 
     out.push_str(&format!("var {} = Profile{{\n", var_name));
     out.push_str(&format!("\tID:          \"{}\",\n", profile.name));
@@ -283,7 +266,31 @@ fn generate_single_profile(ir: &WorkflowIR, profile: &crate::ir::ProfileDef, out
     }
     out.push_str("},\n");
 
-    out.push_str(&format!("\tOutput:      {},\n", output));
+    // Outputs
+    out.push_str("\tOutputs:     map[State]string{");
+    for phase_name in &profile.phases {
+        if let Some(phase) = ir.phases.get(phase_name) {
+            for step_name in [&phase.produce_step, &phase.gate_step] {
+                if let Some(step) = ir.steps.get(step_name) {
+                    if let Some(state) = ir.states.get(&step.action) {
+                        let output = profile
+                            .overrides
+                            .get(&step.action)
+                            .and_then(|o| o.output.as_ref())
+                            .or_else(|| state.output());
+                        if let Some(o) = output {
+                            out.push_str(&format!(
+                                "{}: \"{}\", ",
+                                to_pascal_case(&step.action),
+                                o.artifact_type
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    out.push_str("},\n");
 
     // Executors
     out.push_str("\tExecutors:   map[State]Executor{");
@@ -295,7 +302,7 @@ fn generate_single_profile(ir: &WorkflowIR, profile: &crate::ir::ProfileDef, out
                         let executor = profile
                             .overrides
                             .get(&step.action)
-                            .copied()
+                            .and_then(|o| o.executor)
                             .or_else(|| state.executor())
                             .unwrap_or(Executor::Agent);
                         let exec_str = match executor {
@@ -450,8 +457,8 @@ mod tests {
         let code = generate(&ir);
 
         assert!(code.contains("type State int"));
-        assert!(code.contains("ReadyForPlanning State = iota"));
-        assert!(code.contains("Planning\n"));
+        assert!(code.contains("ReadyForPlanning"));
+        assert!(code.contains("Planning"));
     }
 
     #[test]
@@ -469,7 +476,7 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_go_executor_and_output() {
+    fn test_generate_go_executor() {
         let input = std::fs::read_to_string(fixture_dir().join("workflow.loom")).unwrap();
         let ast = parse::parse_workflow(&input).unwrap();
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
@@ -478,8 +485,7 @@ mod tests {
         assert!(code.contains("type Executor int"));
         assert!(code.contains("Agent Executor = iota"));
         assert!(code.contains("Human"));
-        assert!(code.contains("type OutputKind int"));
-        assert!(code.contains("Local OutputKind = iota"));
+        assert!(!code.contains("OutputKind"));
     }
 
     #[test]

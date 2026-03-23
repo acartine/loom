@@ -1,6 +1,6 @@
 pub mod lower;
 
-use crate::parse::ast::{ActionType, Constraint, Executor, GateKind, OutputKind};
+use crate::parse::ast::{ActionOutput, ActionType, Constraint, Executor, GateKind};
 use crate::prompt::PromptFile;
 use indexmap::IndexMap;
 
@@ -30,6 +30,7 @@ pub enum StateDef {
         display_name: String,
         action_type: ActionType,
         prompt_name: String,
+        output: Option<ActionOutput>,
         constraints: Vec<Constraint>,
         executor: Executor,
     },
@@ -81,6 +82,13 @@ impl StateDef {
     pub fn executor(&self) -> Option<Executor> {
         match self {
             StateDef::Action { executor, .. } => Some(*executor),
+            _ => None,
+        }
+    }
+
+    pub fn output(&self) -> Option<&ActionOutput> {
+        match self {
+            StateDef::Action { output, .. } => output.as_ref(),
             _ => None,
         }
     }
@@ -137,12 +145,17 @@ pub struct PhaseDef {
     pub gate_step: String,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActionOverride {
+    pub executor: Option<Executor>,
+    pub output: Option<ActionOutput>,
+}
+
 #[derive(Debug, Clone)]
 pub struct ProfileDef {
     pub name: String,
     pub display_name: Option<String>,
     pub description: Option<String>,
     pub phases: Vec<String>,
-    pub output: Option<OutputKind>,
-    pub overrides: IndexMap<String, Executor>,
+    pub overrides: IndexMap<String, ActionOverride>,
 }

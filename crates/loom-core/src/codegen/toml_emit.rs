@@ -1,5 +1,5 @@
 use crate::ir::{StateDef, WorkflowIR};
-use crate::parse::ast::{ActionType, Executor, GateKind, OutputKind};
+use crate::parse::ast::{ActionType, Executor, GateKind};
 use crate::prompt::ParamType;
 
 /// Emit the workflow IR as a TOML interchange format
@@ -31,6 +31,7 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
             action_type,
             executor,
             prompt_name,
+            output,
             constraints,
             ..
         } = state
@@ -54,6 +55,12 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
             };
             out.push_str(&format!("executor = \"{}\"\n", exec));
             out.push_str(&format!("prompt = \"{}\"\n", prompt_name));
+            if let Some(ref o) = output {
+                out.push_str(&format!("output_artifact = \"{}\"\n", o.artifact_type));
+                if let Some(ref hint) = o.access_hint {
+                    out.push_str(&format!("output_access_hint = \"{}\"\n", hint));
+                }
+            }
             if !constraints.is_empty() {
                 out.push_str("constraints = [");
                 for c in constraints {
@@ -95,25 +102,27 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
             out.push_str(&format!("\"{}\", ", p));
         }
         out.push_str("]\n");
-        if let Some(output) = &profile.output {
-            let o = match output {
-                OutputKind::Local => "local",
-                OutputKind::Remote => "remote",
-                OutputKind::RemoteMain => "remote_main",
-                OutputKind::Pr => "pr",
-            };
-            out.push_str(&format!("output = \"{}\"\n", o));
-        }
         if !profile.overrides.is_empty() {
             out.push_str("[profiles.");
             out.push_str(&profile.name);
             out.push_str(".overrides]\n");
-            for (action, executor) in &profile.overrides {
-                let exec = match executor {
-                    Executor::Agent => "agent",
-                    Executor::Human => "human",
-                };
-                out.push_str(&format!("{} = \"{}\"\n", action, exec));
+            for (action, overr) in &profile.overrides {
+                if let Some(executor) = overr.executor {
+                    let exec = match executor {
+                        Executor::Agent => "agent",
+                        Executor::Human => "human",
+                    };
+                    out.push_str(&format!("{}.executor = \"{}\"\n", action, exec));
+                }
+                if let Some(ref output) = overr.output {
+                    out.push_str(&format!(
+                        "{}.output_artifact = \"{}\"\n",
+                        action, output.artifact_type
+                    ));
+                    if let Some(ref hint) = output.access_hint {
+                        out.push_str(&format!("{}.output_access_hint = \"{}\"\n", action, hint));
+                    }
+                }
             }
         }
         out.push('\n');

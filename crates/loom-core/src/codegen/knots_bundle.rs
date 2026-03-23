@@ -1,5 +1,5 @@
 use crate::ir::{ProfileDef, StateDef, WorkflowIR};
-use crate::parse::ast::{ActionType, Constraint, Executor, GateKind, OutputKind};
+use crate::parse::ast::{ActionOutput, ActionType, Constraint, Executor, GateKind};
 use crate::prompt::{ParamDef, ParamType, PromptFile};
 use indexmap::IndexMap;
 use serde::Serialize;
@@ -34,6 +34,8 @@ struct StateBundle {
     executor: Option<&'static str>,
     constraints: Vec<&'static str>,
     prompt: Option<String>,
+    output: Option<String>,
+    output_hint: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -56,8 +58,14 @@ struct ProfileBundle {
     display_name: Option<String>,
     description: Option<String>,
     phases: Vec<String>,
-    output: Option<&'static str>,
+    outputs: IndexMap<String, OutputBundle>,
     executors: IndexMap<String, &'static str>,
+}
+
+#[derive(Debug, Serialize)]
+struct OutputBundle {
+    artifact_type: String,
+    access_hint: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -105,7 +113,7 @@ struct ActionOutcomeTable {
 pub fn emit_knots_bundle(ir: &WorkflowIR) -> String {
     let bundle = KnotsBundle {
         format: "knots-bundle",
-        format_version: 1,
+        format_version: 2,
         workflow: WorkflowMetadata {
             name: ir.name.clone(),
             version: ir.version,
@@ -149,12 +157,15 @@ fn state_bundle(state: &StateDef) -> StateBundle {
             executor: None,
             constraints: Vec::new(),
             prompt: None,
+            output: None,
+            output_hint: None,
         },
         StateDef::Action {
             name,
             display_name,
             action_type,
             prompt_name,
+            output,
             constraints,
             executor,
         } => StateBundle {
@@ -169,6 +180,8 @@ fn state_bundle(state: &StateDef) -> StateBundle {
                 .map(|constraint| constraint_name(*constraint))
                 .collect(),
             prompt: Some(prompt_name.clone()),
+            output: output.as_ref().map(|o| o.artifact_type.clone()),
+            output_hint: output.as_ref().and_then(|o| o.access_hint.clone()),
         },
         StateDef::Terminal { name, display_name } => StateBundle {
             id: name.clone(),
@@ -179,6 +192,8 @@ fn state_bundle(state: &StateDef) -> StateBundle {
             executor: None,
             constraints: Vec::new(),
             prompt: None,
+            output: None,
+            output_hint: None,
         },
         StateDef::Escape { name, display_name } => StateBundle {
             id: name.clone(),
@@ -189,6 +204,8 @@ fn state_bundle(state: &StateDef) -> StateBundle {
             executor: None,
             constraints: Vec::new(),
             prompt: None,
+            output: None,
+            output_hint: None,
         },
     }
 }
@@ -215,7 +232,7 @@ fn profile_bundle(ir: &WorkflowIR, profile: &ProfileDef) -> ProfileBundle {
         display_name: profile.display_name.clone(),
         description: profile.description.clone(),
         phases: profile.phases.clone(),
-        output: profile.output.map(output_kind_name),
+        outputs: materialize_profile_outputs(ir, profile),
         executors: materialize_profile_executors(ir, profile),
     }
 }
@@ -297,7 +314,7 @@ fn materialize_profile_executors(
                         let executor = profile
                             .overrides
                             .get(&step.action)
-                            .copied()
+                            .and_then(|o| o.executor)
                             .or_else(|| state.executor())
                             .unwrap_or(Executor::Agent);
                         executors.insert(step.action.clone(), executor_name(executor));
@@ -347,12 +364,38 @@ fn constraint_name(constraint: Constraint) -> &'static str {
     }
 }
 
-fn output_kind_name(output: OutputKind) -> &'static str {
-    match output {
-        OutputKind::Local => "local",
-        OutputKind::Remote => "remote",
-        OutputKind::RemoteMain => "remote_main",
-        OutputKind::Pr => "pr",
+fn materialize_profile_outputs(
+    ir: &WorkflowIR,
+    profile: &ProfileDef,
+) -> IndexMap<String, OutputBundle> {
+    let mut outputs = IndexMap::new();
+
+    for phase_name in &profile.phases {
+        if let Some(phase) = ir.phases.get(phase_name) {
+            for step_name in [&phase.produce_step, &phase.gate_step] {
+                if let Some(step) = ir.steps.get(step_name) {
+                    if let Some(state) = ir.states.get(&step.action) {
+                        let output = profile
+                            .overrides
+                            .get(&step.action)
+                            .and_then(|o| o.output.as_ref())
+                            .or_else(|| state.output());
+                        if let Some(o) = output {
+                            outputs.insert(step.action.clone(), output_bundle(o));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    outputs
+}
+
+fn output_bundle(output: &ActionOutput) -> OutputBundle {
+    OutputBundle {
+        artifact_type: output.artifact_type.clone(),
+        access_hint: output.access_hint.clone(),
     }
 }
 
@@ -384,7 +427,7 @@ mod tests {
         let json: Value = serde_json::from_str(&output).expect("bundle should be valid json");
 
         assert_eq!(json["format"], "knots-bundle");
-        assert_eq!(json["format_version"], 1);
+        assert_eq!(json["format_version"], 2);
         assert_eq!(json["workflow"]["name"], "knots_sdlc");
         assert_eq!(json["workflow"]["default_profile"], "autopilot");
 

@@ -73,69 +73,66 @@ The generated workflow is the full Knots SDLC shape:
 
 ```loom
 workflow knots_sdlc v1 {
-    queue ready_for_planning              "Ready for Planning"
-    queue ready_for_plan_review           "Ready for Plan Review"
-    queue ready_for_implementation        "Ready for Implementation"
-    queue ready_for_implementation_review "Ready for Implementation Review"
-    queue ready_for_shipment              "Ready for Shipment"
-    queue ready_for_shipment_review       "Ready for Shipment Review"
-
-    action planning "Planning" {
+    action planning {
         produce agent
-        prompt planning
     }
 
-    action plan_review "Plan Review" {
+    action plan_review {
         gate review agent
-        prompt plan_review
+        constraint read_only
+        constraint no_git_write
+        constraint metadata_only
     }
 
-    action implementation "Implementation" {
+    action implementation {
         produce agent
-        prompt implementation
     }
 
-    action implementation_review "Implementation Review" {
+    action implementation_review {
         gate review agent
-        prompt implementation_review
+        constraint read_only
+        constraint no_git_write
+        constraint metadata_only
     }
 
-    action shipment "Shipment" {
+    action shipment {
         produce agent
-        prompt shipment
     }
 
-    action shipment_review "Shipment Review" {
+    action shipment_review {
         gate review agent
-        prompt shipment_review
+        constraint read_only
+        constraint no_git_write
+        constraint metadata_only
     }
 
-    terminal shipped   "Shipped"
-    terminal abandoned "Abandoned"
-    escape   deferred  "Deferred"
+    terminal shipped
+    terminal abandoned
+    escape   deferred
 
-    step plan {
-        ready_for_planning -> planning
+    * -> abandoned
+    * -> deferred
+
+    step plan -> planning
+    step plan_rev -> plan_review
+    step impl -> implementation
+    step impl_rev -> implementation_review
+    step ship -> shipment
+    step ship_rev -> shipment_review
+
+    phase planning_phase {
+        produce plan
+        gate plan_rev
     }
 
-    step plan_rev {
-        ready_for_plan_review -> plan_review
+    phase implementation_phase {
+        produce impl
+        gate impl_rev
     }
 
-    step impl {
-        ready_for_implementation -> implementation
-    }
-
-    step impl_rev {
-        ready_for_implementation_review -> implementation_review
-    }
-
-    step ship {
-        ready_for_shipment -> shipment
-    }
-
-    step ship_rev {
-        ready_for_shipment_review -> shipment_review
+    phase shipment_phase {
+        produce ship
+        gate ship_rev
     }
 }
 ```

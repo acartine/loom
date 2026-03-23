@@ -35,15 +35,15 @@ declaration = {
 
 // States
 queue_decl = {
-    "queue" ~ ident ~ string
+    "queue" ~ ident ~ string?
 }
 
 action_decl = {
-    "action" ~ ident ~ string ~ "{" ~ action_body ~ "}"
+    "action" ~ ident ~ string? ~ "{" ~ action_body ~ "}"
 }
 
 action_body = {
-    action_type ~ prompt_ref ~ constraint*
+    action_type ~ prompt_ref? ~ output_ref? ~ constraint*
 }
 
 action_type = { produce_type | gate_type }
@@ -55,6 +55,8 @@ gate_kind = { "approve" | "auth" | "review" }
 executor  = { "agent" | "human" }
 
 prompt_ref = { "prompt" ~ ident }
+
+output_ref = { "output" ~ ident ~ string? }
 
 constraint = { "constraint" ~ constraint_kind }
 constraint_kind = { "read_only" | "no_git_write" | "metadata_only" }
@@ -70,6 +72,7 @@ escape_decl = {
 // Composites
 step_decl = {
     "step" ~ ident ~ "{" ~ ident ~ "->" ~ ident ~ "}"
+  | "step" ~ ident ~ "->" ~ ident
 }
 
 phase_decl = {
@@ -91,19 +94,15 @@ profile_body = {
 
 profile_field = {
     profile_phases
-  | profile_output
   | profile_override
   | profile_description
 }
 
 profile_phases  = { "phases" ~ ident_list }
-profile_output  = { "output" ~ output_kind }
 profile_override = {
     "override" ~ ident ~ "{" ~ override_body ~ "}"
 }
 profile_description = { "description" ~ string }
-
-output_kind = { "local" | "remote_main" | "remote" | "pr" }
 
 override_body = {
     override_field*
@@ -111,9 +110,11 @@ override_body = {
 
 override_field = {
     executor_override
+  | output_override
 }
 
 executor_override = { "executor" ~ executor }
+output_override = { "output" ~ ident ~ string? }
 
 // Includes
 include_decl = { "include" ~ string }

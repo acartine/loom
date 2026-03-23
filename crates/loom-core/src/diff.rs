@@ -271,14 +271,6 @@ fn diff_single_profile(
             detail: Some(format!("phases {:?} -> {:?}", old.phases, new.phases)),
         });
     }
-    if old.output != new.output {
-        changes.push(Change {
-            kind: ChangeKind::Changed,
-            category: "profile".into(),
-            name: name.to_string(),
-            detail: Some("output changed".to_string()),
-        });
-    }
     if old.overrides != new.overrides {
         changes.push(Change {
             kind: ChangeKind::Changed,
