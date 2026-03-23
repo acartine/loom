@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19dd-3213-7d92-8c31-039770dc4e1e",
+  "occurred_at": "2026-03-23T08:43:39.923846Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "OpenAI",
+    "content": "Implementation complete on branch feat/cli-completions. Added clap_complete workspace dependency and a new 'completions' subcommand (crates/loom-cli/src/commands/completions.rs) that generates shell completion scripts for bash, zsh, fish, powershell, and elvish. Wired into Commands enum in main.rs. 5 unit tests (one per shell) all pass. Full test suite (126 tests) passes. Branch pushed to origin.",
+    "datetime": "2026-03-23T08:43:39.923846Z",
+    "entry_id": "019d19dd-3213-7d92-8c31-0387099955b7",
+    "model": "gpt",
+    "username": "unknown",
+    "version": "5.4"
+  }
+}
