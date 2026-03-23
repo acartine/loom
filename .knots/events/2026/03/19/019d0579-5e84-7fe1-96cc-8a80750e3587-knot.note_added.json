@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0579-5e84-7fe1-96cc-8a80750e3587",
+  "occurred_at": "2026-03-19T09:42:13.380095Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "unknown",
+    "content": "Shipment review blocked by dirty workspace on main: git status --short reported modified .gitignore, so the shipped state could not be validated from a clean worktree. Existing knot tags cover implementation/shipment commits commit:3cbe24d66c40 and commit:12f5605b3ea8.",
+    "datetime": "2026-03-19T09:42:13.380095Z",
+    "entry_id": "019d0579-5e84-7fe1-96cc-8a74d5d49cc9",
+    "model": "unknown",
+    "username": "unknown",
+    "version": "unknown"
+  }
+}

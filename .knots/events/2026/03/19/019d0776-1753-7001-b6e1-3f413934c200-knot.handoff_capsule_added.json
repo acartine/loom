@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0776-1753-7001-b6e1-3f413934c200",
+  "occurred_at": "2026-03-19T18:57:52.978998Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "claude-code",
+    "content": "Merged feature branch loom-5a3c-fix-update-tests into main (merge commit 3e431d80e012) and pushed. CI initially failed due to cargo fmt check on the multi-line set_nonblocking call; fixed with commit 77a7cbff8419. CI now green on main (run 23311761283). All 109 tests pass.",
+    "datetime": "2026-03-19T19:00:00Z",
+    "entry_id": "019d0776-1753-7001-b6e1-3f38d372826f",
+    "model": "claude-opus-4-6",
+    "username": "cartine",
+    "version": "claude-opus-4-6"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "event_id": "019d0770-c4b6-7101-ab81-e5366c69a9a8",
+  "occurred_at": "2026-03-19T18:52:04.150428Z",
+  "type": "idx.knot_head",
+  "data": {
+    "deferred_from_state": null,
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "invariants": [],
+    "knot_id": "loom-5a3c",
+    "profile_id": "autopilot",
+    "state": "implementation",
+    "terminal": false,
+    "title": "support \"update\" to update latest installed binary if one exists.",
+    "type": "work",
+    "updated_at": "2026-03-19T18:52:04.150428Z",
+    "workflow_id": "compatibility"
+  },
+  "precondition": {
+    "profile_etag": "019d057c-b913-76e1-9134-e49879bff11e"
+  }
+}

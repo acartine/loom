@@ -1,0 +1,15 @@
+{
+  "event_id": "019d056c-a640-7061-8f59-c028a3d6d522",
+  "occurred_at": "2026-03-19T09:28:19.776019Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "codex",
+    "content": "Plan approved. It matches the current repo layout: loom-cli is a single binary crate, install.sh already uses redirect-based latest asset URLs, and docs/releasing.md confirms the supported release matrix is x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, and aarch64-apple-darwin. The plan covers CLI surface, redirect-based latest resolution to avoid GitHub API rate limits, checksum verification, atomic binary replacement, installer alignment, docs, and test coverage. Main implementation caution is test isolation for self-update flows so integration tests should run against a copied binary or stubbed install path rather than mutating target/debug/loom in place.",
+    "datetime": "2026-03-19T09:28:13Z",
+    "entry_id": "019d056c-a640-7061-8f59-c0184b681af2",
+    "model": "gpt-5",
+    "username": "cartine",
+    "version": "gpt-5-codex"
+  }
+}

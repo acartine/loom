@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0573-e3bc-7892-9b31-d4de21fee6f9",
+  "occurred_at": "2026-03-19T09:36:14.268621Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "codex",
+    "content": "Implemented loom update for installed release binaries using GitHub redirect-based latest asset resolution, checksum verification, archive extraction, and atomic self-replacement. Tightened install.sh target detection to the published release matrix, documented the new update flow, and added unit plus integration coverage for target mapping, redirected-version parsing, --check, no-op, --force, and unsupported targets. Validation completed with cargo fmt --all --check, cargo test, and cargo clippy --all-targets --all-features -- -D warnings. Branch: loom-5a3c-update, commit: 3cbe24d66c40.",
+    "datetime": "2026-03-19T09:35:27Z",
+    "entry_id": "019d0573-e3bc-7892-9b31-d4cc0af88b3b",
+    "model": "gpt-5",
+    "username": "cartine",
+    "version": "gpt-5"
+  }
+}

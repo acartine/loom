@@ -1,0 +1,15 @@
+{
+  "event_id": "019d10a0-b95d-7ad3-b964-fa5d06f5bf74",
+  "occurred_at": "2026-03-21T13:41:01.9176Z",
+  "knot_id": "loom-0455",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Implemented aligned `loom templates list` output by padding template IDs to the max width and added integration coverage asserting descriptions start in the same column. Validation: `cargo test -p loom-cli --test cli_integration`; `cargo run -q -p loom-cli -- templates list`. Branch: `loom-0455`. Commit: `07fd779ce73e`.",
+    "datetime": "2026-03-21T13:40:27Z",
+    "entry_id": "019d10a0-b95d-7ad3-b964-fa437773e387",
+    "model": "gpt-5",
+    "username": "cartine",
+    "version": "codex"
+  }
+}

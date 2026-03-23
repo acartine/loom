@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0578-6dea-7fc3-8dcb-ef54ab3045eb",
+  "occurred_at": "2026-03-19T09:41:11.7864Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "claude-code",
+    "content": "Shipment complete: merged feature branch loom-5a3c-update into main (merge commit 12f5605b3ea8). All tests pass locally and CI is green on remote (run 23288769100). Pushed main to origin.",
+    "datetime": "2026-03-19T12:00:00Z",
+    "entry_id": "019d0578-6dea-7fc3-8dcb-ef47f1b61b00",
+    "model": "claude-opus-4-6",
+    "username": "cartine",
+    "version": "claude-opus-4-6"
+  }
+}

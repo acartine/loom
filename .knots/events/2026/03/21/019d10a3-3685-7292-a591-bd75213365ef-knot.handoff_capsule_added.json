@@ -1,0 +1,15 @@
+{
+  "event_id": "019d10a3-3685-7292-a591-bd75213365ef",
+  "occurred_at": "2026-03-21T13:43:45.029952Z",
+  "knot_id": "loom-0455",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "claude-code",
+    "content": "Shipment complete. Merged feature branch loom-0455 (fast-forward) to main and pushed. Commit 07fd779ce73e. CI ran — 2 pre-existing test failures (test_load_planning_prompt, test_validate_workflow) unrelated to this change were present before and after merge. No new failures introduced.",
+    "datetime": "2026-03-21T13:45:00Z",
+    "entry_id": "019d10a3-3685-7292-a591-bd6ef2e6bc67",
+    "model": "claude-opus-4-6",
+    "username": "cartine",
+    "version": "claude-opus-4-6"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "event_id": "019d10a3-dd53-7dc1-9bee-72a5f6d6eaf9",
+  "occurred_at": "2026-03-21T13:44:27.731393Z",
+  "knot_id": "loom-0455",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "claude-code",
+    "content": "Shipment review approved. Commit 07fd779ce73e is on main. Change correctly computes max template ID width and left-pads with fmt width specifier to align descriptions. Test verifies column alignment. CI test passes. No invariants to check. No regressions.",
+    "datetime": "2026-03-21T18:00:00Z",
+    "entry_id": "019d10a3-dd53-7dc1-9bee-7295d7707052",
+    "model": "claude-opus-4-6",
+    "username": "cartine",
+    "version": "claude-opus-4-6"
+  }
+}

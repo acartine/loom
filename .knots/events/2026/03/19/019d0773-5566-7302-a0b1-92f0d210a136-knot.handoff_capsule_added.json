@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0773-5566-7302-a0b1-92f0d210a136",
+  "occurred_at": "2026-03-19T18:54:52.262374Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Approved in implementation review. The only branch diff is a test-harness fix in crates/loom-cli/tests/update_integration.rs that resets accepted TcpStreams to blocking mode before reading requests, which directly addresses the previously rejected WouldBlock/connection reset failure in update_force_reinstalls_current_version. Validation passed with cargo test -p loom-cli --test update_integration and full cargo test (109 tests). No knot invariants were defined, and the change stays within test scope without altering product behavior.",
+    "datetime": "2026-03-19T18:54:44Z",
+    "entry_id": "019d0773-5566-7302-a0b1-92e0e6c2b210",
+    "model": "GPT-5",
+    "username": "cartine",
+    "version": "gpt-5"
+  }
+}

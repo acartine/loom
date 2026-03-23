@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0777-0afd-7a51-a9be-7270878c97b6",
+  "occurred_at": "2026-03-19T18:58:55.357461Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Shipment review approved on main at 77a7cbff8419. Verified commit tags for 3cbe24d66c40, 12f5605b3ea8, fd99548540bb, 9883124d012c, 3e431d80e012, and 77a7cbff8419. CI workflow 'CI' run 23311761283 completed successfully for HEAD, and cargo test -p loom-cli passed locally with all 30 loom-cli tests green.",
+    "datetime": "2026-03-19T18:58:38Z",
+    "entry_id": "019d0777-0afd-7a51-a9be-726a7aaccd0e",
+    "model": "GPT-5",
+    "username": "cartine",
+    "version": "GPT-5"
+  }
+}

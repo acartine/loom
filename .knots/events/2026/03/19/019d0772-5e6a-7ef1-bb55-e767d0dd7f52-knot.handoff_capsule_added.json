@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0772-5e6a-7ef1-bb55-e767d0dd7f52",
+  "occurred_at": "2026-03-19T18:53:49.034536Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "claude-code",
+    "content": "Fixed the flaky update integration test. The stub release server's TcpListener was set to non-blocking mode for graceful shutdown, but accepted TcpStream connections inherited this setting, causing handle_connection to panic with WouldBlock when reading the HTTP request. Fix: explicitly call set_nonblocking(false) on each accepted stream before reading. All 109 tests pass (8 unit + 18 CLI integration + 4 update integration + 79 loom-core). Branch: loom-5a3c-fix-update-tests pushed to origin.",
+    "datetime": "2026-03-19T00:00:00Z",
+    "entry_id": "019d0772-5e6a-7ef1-bb55-e750e1cad218",
+    "model": "claude-opus-4-6",
+    "username": "cartine",
+    "version": "claude-opus-4-6"
+  }
+}

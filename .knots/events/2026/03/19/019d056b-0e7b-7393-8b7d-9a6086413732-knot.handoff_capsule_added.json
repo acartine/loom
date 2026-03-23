@@ -1,0 +1,15 @@
+{
+  "event_id": "019d056b-0e7b-7393-8b7d-9a6086413732",
+  "occurred_at": "2026-03-19T09:26:35.387264Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Planning complete. Implementation should add a new `loom update` command in the CLI, backed by explicit host-to-artifact mapping for the three published release targets only, and use GitHub release redirect URLs for `latest` instead of the Releases API. Include installer parity work in `install.sh`, add focused tests for check/force/no-op/unsupported-platform behavior with injectable network stubs, and update README/getting-started plus docs/releasing so the new user-facing install/update behavior ships with docs.",
+    "datetime": "2026-03-19T09:25:40Z",
+    "entry_id": "019d056b-0e7b-7393-8b7d-9a51434d19fd",
+    "model": "gpt-5",
+    "username": "cartine",
+    "version": "gpt-5"
+  }
+}

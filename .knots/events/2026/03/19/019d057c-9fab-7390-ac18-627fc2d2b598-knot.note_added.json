@@ -1,0 +1,15 @@
+{
+  "event_id": "019d057c-9fab-7390-ac18-627fc2d2b598",
+  "occurred_at": "2026-03-19T09:45:46.667576Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "unknown",
+    "content": "Implementation review rejected on 2026-03-19: cargo test fails in crates/loom-cli/tests/update_integration.rs. The update_force_reinstalls_current_version path aborts because the stub release server reads from a nonblocking connection and panics at line 116 with WouldBlock/connection reset, so the required sanity gate does not pass.",
+    "datetime": "2026-03-19T09:45:46.667576Z",
+    "entry_id": "019d057c-9fab-7390-ac18-6265cbc83dbd",
+    "model": "unknown",
+    "username": "unknown",
+    "version": "unknown"
+  }
+}

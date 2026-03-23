@@ -1,0 +1,20 @@
+{
+  "event_id": "019d19d8-4d05-7761-b6a4-3485b8b1129c",
+  "occurred_at": "2026-03-23T08:38:19.141401Z",
+  "type": "idx.knot_head",
+  "data": {
+    "deferred_from_state": null,
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "invariants": [],
+    "knot_id": "loom-f0dc",
+    "profile_id": "autopilot",
+    "state": "ready_for_planning",
+    "terminal": false,
+    "title": "loom cli autocompletes",
+    "type": "work",
+    "updated_at": "2026-03-23T08:38:19.141401Z",
+    "workflow_id": "compatibility"
+  }
+}

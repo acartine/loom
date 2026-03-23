@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0569-4669-7bb3-8f1e-1bb1ceed9db6",
+  "occurred_at": "2026-03-19T09:24:38.63329Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "unknown",
+    "content": "Plan needs revision before implementation. Two concrete gaps: (1) it says to reuse install.sh target detection, but the actual release matrix only publishes x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, and aarch64-apple-darwin, so the plan must explicitly define supported targets and not assume x86_64-apple-darwin exists; (2) this is a new user-facing CLI command and release/install-related behavior, but the plan omits the required doc updates called out in CONTRIBUTING.md (README/docs/getting-started as appropriate, plus docs/releasing.md if release/install behavior is part of the story). Tighten the test plan to cover --force/--check behavior and unsupported-target handling as part of the revision.",
+    "datetime": "2026-03-19T09:24:38.63329Z",
+    "entry_id": "019d0569-4669-7bb3-8f1e-1baf6841e121",
+    "model": "unknown",
+    "username": "unknown",
+    "version": "unknown"
+  }
+}

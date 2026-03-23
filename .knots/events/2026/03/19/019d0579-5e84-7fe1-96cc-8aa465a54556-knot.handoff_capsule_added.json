@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0579-5e84-7fe1-96cc-8aa465a54556",
+  "occurred_at": "2026-03-19T09:42:13.380095Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "codex",
+    "content": "Shipment review could not complete because main was not clean at review time (.gitignore modified). Rolled the knot back to ready_for_implementation per shipment_review failure handling; commit tags for 3cbe24d66c40 and 12f5605b3ea8 are already present.",
+    "datetime": "2026-03-19T09:42:06Z",
+    "entry_id": "019d0579-5e84-7fe1-96cc-8a9bdd94a514",
+    "model": "gpt-5",
+    "username": "cartine",
+    "version": "gpt-5"
+  }
+}

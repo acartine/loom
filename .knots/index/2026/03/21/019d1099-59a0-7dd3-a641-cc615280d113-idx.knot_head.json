@@ -1,0 +1,20 @@
+{
+  "event_id": "019d1099-59a0-7dd3-a641-cc615280d113",
+  "occurred_at": "2026-03-21T13:32:58.651604Z",
+  "type": "idx.knot_head",
+  "data": {
+    "deferred_from_state": null,
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "invariants": [],
+    "knot_id": "loom-0455",
+    "profile_id": "autopilot_no_planning",
+    "state": "ready_for_implementation",
+    "terminal": false,
+    "title": "loom templates list: align description text",
+    "type": "work",
+    "updated_at": "2026-03-21T13:32:58.651604Z",
+    "workflow_id": "compatibility"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0575-cfbe-78e1-b950-16d899e291c1",
+  "occurred_at": "2026-03-19T09:38:20.222262Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Approved implementation review: loom update now resolves latest via GitHub release asset redirects, enforces the supported release matrix in both Rust and install.sh, verifies checksums before atomic self-replacement, documents the new UX, and includes unit plus integration coverage for target mapping, redirect tag parsing, --check, no-op, --force, and unsupported targets. Read-only review of commit 3cbe24d66c40 found no invariant violations or acceptance-criteria drift. Sanity gates passed against an exported snapshot of that commit: cargo fmt --all --check, cargo test, and cargo clippy --all-targets --all-features -- -D warnings.",
+    "datetime": "2026-03-19T09:36:41Z",
+    "entry_id": "019d0575-cfbe-78e1-b950-16c1de6128cf",
+    "model": "GPT-5",
+    "username": "cartine",
+    "version": "GPT-5"
+  }
+}

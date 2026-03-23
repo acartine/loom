@@ -1,0 +1,17 @@
+{
+  "event_id": "019d1099-5759-7fa3-8e3d-b6ccd11af8b2",
+  "occurred_at": "2026-03-21T13:32:58.073596Z",
+  "knot_id": "loom-0455",
+  "type": "knot.created",
+  "data": {
+    "body": "would be much easier to read if the descriptions were left aligned to the same \"column\"",
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "profile_id": "autopilot_no_planning",
+    "state": "ready_for_implementation",
+    "title": "loom templates list: align description text",
+    "type": "work",
+    "workflow_id": "compatibility"
+  }
+}

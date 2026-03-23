@@ -1,0 +1,17 @@
+{
+  "event_id": "019d0563-e2b6-76f1-846b-74a484dfc655",
+  "occurred_at": "2026-03-19T09:18:45.430506Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.created",
+  "data": {
+    "body": "do the smart redirect thing instead of the public url, so github doesn't rate limit users.",
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "profile_id": "autopilot",
+    "state": "ready_for_planning",
+    "title": "support \"update\" to update latest installed binary if one exists.",
+    "type": "work",
+    "workflow_id": "compatibility"
+  }
+}

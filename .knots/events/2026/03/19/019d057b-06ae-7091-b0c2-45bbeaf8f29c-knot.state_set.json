@@ -1,0 +1,17 @@
+{
+  "event_id": "019d057b-06ae-7091-b0c2-45bbeaf8f29c",
+  "occurred_at": "2026-03-19T09:44:01.966138Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.state_set",
+  "data": {
+    "actor_kind": "agent",
+    "agent_model": "claude-opus-4-6",
+    "agent_name": "claude-code",
+    "agent_version": "4.6",
+    "force": false,
+    "from": "implementation",
+    "profile_id": "autopilot",
+    "to": "ready_for_implementation_review",
+    "workflow_id": "compatibility"
+  }
+}

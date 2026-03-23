@@ -1,0 +1,20 @@
+{
+  "event_id": "019d056c-a648-73c0-8ef1-fdca39d9037e",
+  "occurred_at": "2026-03-19T09:28:19.776019Z",
+  "type": "idx.knot_head",
+  "data": {
+    "deferred_from_state": null,
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "invariants": [],
+    "knot_id": "loom-5a3c",
+    "profile_id": "autopilot",
+    "state": "plan_review",
+    "terminal": false,
+    "title": "support \"update\" to update latest installed binary if one exists.",
+    "type": "work",
+    "updated_at": "2026-03-19T09:28:19.776019Z",
+    "workflow_id": "compatibility"
+  }
+}

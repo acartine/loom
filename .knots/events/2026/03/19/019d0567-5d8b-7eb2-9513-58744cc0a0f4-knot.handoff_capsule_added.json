@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0567-5d8b-7eb2-9513-58744cc0a0f4",
+  "occurred_at": "2026-03-19T09:22:33.483886Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "claude-code",
+    "content": "Plan complete for `loom update` subcommand. Key decisions: use `ureq` (blocking HTTP client) + `sha2`/`flate2`/`tar` crates. Leverage GitHub's smart redirect URL (`/releases/latest/download/`) to avoid API rate limits. Parse version from redirect Location header for version comparison. Atomic binary replacement via rename. Supports `--check` (dry run) and `--force` flags. See plan note for full file change list and test strategy.",
+    "datetime": "2026-03-19T12:00:00Z",
+    "entry_id": "019d0567-5d8b-7eb2-9513-586f40805e90",
+    "model": "claude-opus-4-6",
+    "username": "cartine",
+    "version": "4.6"
+  }
+}

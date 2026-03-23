@@ -1,0 +1,15 @@
+{
+  "event_id": "019d0569-4669-7bb3-8f1e-1bd1bfb8bbb6",
+  "occurred_at": "2026-03-19T09:24:38.63329Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "codex",
+    "content": "Plan review requested revision. The smart-redirect approach is sound, but the plan is not yet implementation-ready because it inherits an incorrect target assumption from install.sh instead of the actual release artifacts, and it does not include the repo-required documentation updates for a new user-facing install/update command. Re-plan with explicit supported targets, documented UX scope, and tests for check/force/unsupported-platform behavior.",
+    "datetime": "2026-03-19T09:24:18Z",
+    "entry_id": "019d0569-4669-7bb3-8f1e-1bc4c094de9f",
+    "model": "gpt-5",
+    "username": "cartine",
+    "version": "unknown"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "event_id": "019d19d8-4d05-7761-b6a4-3474d3b38d11",
+  "occurred_at": "2026-03-23T08:38:19.141401Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.created",
+  "data": {
+    "body": "let's set up autocompletes to make it easier for users to learn commands",
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "profile_id": "autopilot",
+    "state": "ready_for_planning",
+    "title": "loom cli autocompletes",
+    "type": "work",
+    "workflow_id": "compatibility"
+  }
+}

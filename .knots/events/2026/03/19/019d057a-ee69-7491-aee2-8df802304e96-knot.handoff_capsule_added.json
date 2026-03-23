@@ -1,0 +1,15 @@
+{
+  "event_id": "019d057a-ee69-7491-aee2-8df802304e96",
+  "occurred_at": "2026-03-19T09:43:55.753331Z",
+  "knot_id": "loom-5a3c",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "claude-code",
+    "content": "Implementation re-run after shipment review rollback. The update command was already merged to main (3cbe24d/12f5605). The rollback was caused by a dirty .gitignore (missing /.knots/ entry). Created branch loom-5a3c-gitignore-fix with commit fd99548 that adds /.knots/ to .gitignore. All sanity gates pass: cargo test (79+18+3 tests), cargo fmt --all --check, cargo clippy --all-targets --all-features -- -D warnings.",
+    "datetime": "2026-03-19T12:00:00Z",
+    "entry_id": "019d057a-ee69-7491-aee2-8de111f2659d",
+    "model": "claude-opus-4-6",
+    "username": "cartine",
+    "version": "4.6"
+  }
+}
