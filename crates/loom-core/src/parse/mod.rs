@@ -257,8 +257,7 @@ fn build_profile(pair: pest::iterators::Pair<Rule>) -> LoomResult<ProfileDecl> {
                                 let override_field = field.into_inner().next().unwrap();
                                 match override_field.as_rule() {
                                     Rule::executor_override => {
-                                        let exec_pair =
-                                            override_field.into_inner().next().unwrap();
+                                        let exec_pair = override_field.into_inner().next().unwrap();
                                         executor = Some(build_executor(exec_pair));
                                     }
                                     Rule::output_override => {

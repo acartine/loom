@@ -31,7 +31,8 @@ pub fn lower_with_config(
     let mut wildcard_targets: Vec<String> = Vec::new();
     let mut prompts: IndexMap<String, prompt::PromptFile> = IndexMap::new();
     let mut action_prompt_refs: Vec<(String, String)> = Vec::new();
-    let mut synthesized_queues: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut synthesized_queues: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
 
     // Phase 1: Register all declarations
     for decl in &ast.declarations {
@@ -128,10 +129,8 @@ pub fn lower_with_config(
                             name: queue_name.clone(),
                         });
                     } else if !states.contains_key(&queue_name) {
-                        let queue_display = format!(
-                            "Ready for {}",
-                            crate::snake_to_title_case(&s.action)
-                        );
+                        let queue_display =
+                            format!("Ready for {}", crate::snake_to_title_case(&s.action));
                         states.insert(
                             queue_name.clone(),
                             StateDef::Queue {
@@ -360,11 +359,7 @@ pub fn lower_with_config(
     // they are injected by the runtime from the action's output declaration.
     let produce_prompts: std::collections::HashSet<&str> = action_prompt_refs
         .iter()
-        .filter(|(action_name, _)| {
-            states
-                .get(action_name)
-                .is_some_and(|s| s.is_produce())
-        })
+        .filter(|(action_name, _)| states.get(action_name).is_some_and(|s| s.is_produce()))
         .map(|(_, prompt_name)| prompt_name.as_str())
         .collect();
 
