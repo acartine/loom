@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e9-12ac-7232-bbf4-eb39685c0471",
+  "occurred_at": "2026-03-23T08:56:38.316648Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "1. Regression coverage is still incomplete. `/private/tmp/loom-6d6f-fix/crates/loom-cli/tests/update_integration.rs` only simulates one redirect followed by `200 OK`, so it does not reproduce the production failure where GitHub redirects from `/latest/download/...` to `/releases/download/{tag}/...` and then again to a CDN URL. 2. The helper tests in `/private/tmp/loom-6d6f-fix/crates/loom-cli/src/commands/update.rs` validate parsing and relative `Location` handling, but they do not prove the end-to-end update flow now stops at the first redirect hop. Add a regression test for the two-hop redirect path, then requeue for review.",
+    "datetime": "2026-03-23T08:56:02Z",
+    "entry_id": "019d19e9-12ac-7232-bbf4-eb2ff8efa440",
+    "model": "gpt-5.4",
+    "username": "cartine",
+    "version": "gpt-5.4"
+  }
+}

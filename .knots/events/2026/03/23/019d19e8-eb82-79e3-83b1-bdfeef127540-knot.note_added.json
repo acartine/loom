@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e8-eb82-79e3-83b1-bdfeef127540",
+  "occurred_at": "2026-03-23T08:56:28.290098Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Review blocked: the new tests do not exercise the real two-hop GitHub redirect chain that caused this bug. `update_integration.rs` still models `/releases/latest/download/...` -> `/releases/download/{tag}/...` -> `200`, so the pre-fix implementation would have passed. Add regression coverage that proves `resolve_latest_tag()` stops at the first redirect before the CDN hop.",
+    "datetime": "2026-03-23T08:56:02Z",
+    "entry_id": "019d19e8-eb82-79e3-83b1-bde51dcfe41c",
+    "model": "gpt-5.4",
+    "username": "cartine",
+    "version": "gpt-5.4"
+  }
+}
