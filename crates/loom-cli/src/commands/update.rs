@@ -3,7 +3,7 @@ use super::install_paths::{
 };
 use flate2::read::GzDecoder;
 use miette::{Context, IntoDiagnostic};
-use reqwest::blocking::{Client, Response};
+use reqwest::blocking::Client;
 use reqwest::header::LOCATION;
 use semver::Version;
 use sha2::{Digest, Sha256};
@@ -148,21 +148,24 @@ fn release_urls(base_url: &str, target: &ReleaseTarget, tag: Option<&str>) -> Re
     }
 }
 
-fn resolve_latest_tag(client: &Client, archive_url: &str) -> miette::Result<String> {
-    let response = client.head(archive_url).send().into_diagnostic()?;
-    let final_url = final_url(&response)
-        .or_else(|| redirected_location(response.headers().get(LOCATION), archive_url))
-        .ok_or_else(|| miette::miette!("missing final URL while resolving latest release"))?;
-    parse_release_tag_from_url(&final_url)
-}
+fn resolve_latest_tag(_client: &Client, archive_url: &str) -> miette::Result<String> {
+    // Use a no-redirect client so we stop at the first 3xx hop.
+    // GitHub redirects /releases/latest/download/... to /releases/download/{tag}/...
+    // and then to a CDN URL. We need the intermediate URL that contains the tag.
+    let no_redirect_client = Client::builder()
+        .user_agent(format!("loom-cli/{VERSION}"))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .into_diagnostic()?;
 
-fn final_url(response: &Response) -> Option<String> {
-    let url = response.url().as_str();
-    if url.is_empty() {
-        None
-    } else {
-        Some(url.to_owned())
-    }
+    let response = no_redirect_client
+        .head(archive_url)
+        .send()
+        .into_diagnostic()?;
+
+    let location_url = redirected_location(response.headers().get(LOCATION), archive_url)
+        .ok_or_else(|| miette::miette!("missing Location header while resolving latest release"))?;
+    parse_release_tag_from_url(&location_url)
 }
 
 fn redirected_location(
@@ -173,7 +176,9 @@ fn redirected_location(
     if location.starts_with("http://") || location.starts_with("https://") {
         Some(location.to_owned())
     } else {
-        Some(format!("{}{}", base.trim_end_matches('/'), location))
+        // Resolve root-relative paths against the origin of the base URL
+        let base_url = reqwest::Url::parse(base).ok()?;
+        base_url.join(location).ok().map(|u| u.to_string())
     }
 }
 
@@ -347,6 +352,54 @@ mod tests {
         )
         .unwrap();
         assert_eq!(tag, "v1.2.3");
+    }
+
+    #[test]
+    fn parse_release_tag_fails_for_cdn_url() {
+        let result = parse_release_tag_from_url(
+            "https://objects.githubusercontent.com/github-production-release-asset-2e65be/123456789/abcdef-1234-5678-9abc-def012345678?X-Amz-Algorithm=AWS4-HMAC-SHA256",
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("download path"));
+    }
+
+    #[test]
+    fn redirected_location_resolves_absolute_url() {
+        let location = reqwest::header::HeaderValue::from_static(
+            "https://github.com/acartine/loom/releases/download/v1.2.3/loom-aarch64-apple-darwin.tar.gz",
+        );
+        let result = redirected_location(
+            Some(&location),
+            "https://github.com/acartine/loom/releases/latest/download/loom-aarch64-apple-darwin.tar.gz",
+        );
+        assert_eq!(
+            result.unwrap(),
+            "https://github.com/acartine/loom/releases/download/v1.2.3/loom-aarch64-apple-darwin.tar.gz"
+        );
+    }
+
+    #[test]
+    fn redirected_location_resolves_root_relative_path() {
+        let location = reqwest::header::HeaderValue::from_static(
+            "/acartine/loom/releases/download/v1.2.3/loom-aarch64-apple-darwin.tar.gz",
+        );
+        let result = redirected_location(
+            Some(&location),
+            "https://github.com/acartine/loom/releases/latest/download/loom-aarch64-apple-darwin.tar.gz",
+        );
+        assert_eq!(
+            result.unwrap(),
+            "https://github.com/acartine/loom/releases/download/v1.2.3/loom-aarch64-apple-darwin.tar.gz"
+        );
+    }
+
+    #[test]
+    fn redirected_location_returns_none_without_header() {
+        let result: Option<String> = redirected_location(
+            None,
+            "https://github.com/acartine/loom/releases/latest/download/loom.tar.gz",
+        );
+        assert!(result.is_none());
     }
 
     #[test]
