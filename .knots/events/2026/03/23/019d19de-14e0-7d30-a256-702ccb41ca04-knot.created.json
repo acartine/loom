@@ -1,0 +1,17 @@
+{
+  "event_id": "019d19de-14e0-7d30-a256-702ccb41ca04",
+  "occurred_at": "2026-03-23T08:44:37.98488Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.created",
+  "data": {
+    "body": "➜ ~ loom update\nError:   × redirected URL does not include a release download path\n\n➜ ~",
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "profile_id": "autopilot",
+    "state": "ready_for_planning",
+    "title": "Loom update throws error",
+    "type": "work",
+    "workflow_id": "compatibility"
+  }
+}

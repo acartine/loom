@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e0-eda9-7691-b72b-3790555a0af8",
+  "occurred_at": "2026-03-23T08:47:44.55376Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "OpenAI",
+    "content": "Shipment complete: merged feat/cli-completions to main (fast-forward, commit 2d8038fc71bd), pushed to origin. CI green on run 23428751659 — all checks passed (format, lint, test, shell syntax).",
+    "datetime": "2026-03-23T08:47:44.55376Z",
+    "entry_id": "019d19e0-eda9-7691-b72b-378945f2628e",
+    "model": "gpt",
+    "username": "unknown",
+    "version": "5.4"
+  }
+}

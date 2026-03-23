@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e1-ea45-7511-8c7b-4da82488b854",
+  "occurred_at": "2026-03-23T08:48:49.221128Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Requested plan revision. The plan’s main diagnosis is correct, but approval would be premature because it assumes redirected_location() can safely resolve the HEAD response Location header. In the current code, redirected_location() appends a root-relative Location to the full request URL instead of resolving it against the origin, so a redirect such as '/acartine/loom/releases/download/v1.2.3/...' would become malformed. Revise the plan to include correct relative URL resolution for the no-redirect HEAD flow and extend tests to cover both that relative redirect and the second CDN redirect hop.",
+    "datetime": "2026-03-23T08:48:00Z",
+    "entry_id": "019d19e1-ea45-7511-8c7b-4d91fcaecdcb",
+    "model": "GPT-5",
+    "username": "cartine",
+    "version": "gpt-5-codex"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e1-85dd-7452-87c0-f8e0589a90a1",
+  "occurred_at": "2026-03-23T08:48:23.517727Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "OpenAI",
+    "content": "Shipment review approved. Commit 2d8038fc71bd (feat: add loom completions command) verified on main. CI green (run 23428751659, all checks passed). No invariants to check. Change adds completions subcommand for bash/zsh/fish/powershell/elvish via clap_complete — 84 lines across 6 files, clean implementation.",
+    "datetime": "2026-03-23T08:48:23.517727Z",
+    "entry_id": "019d19e1-85dd-7452-87c0-f8d9b04c77bb",
+    "model": "gpt",
+    "username": "unknown",
+    "version": "5.4"
+  }
+}

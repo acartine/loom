@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19df-3d66-7710-9041-df6e0238ddcf",
+  "occurred_at": "2026-03-23T08:45:53.894723Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "OpenAI",
+    "content": "Shipment review found commit 2d8038f (feat: add loom completions command) exists only on feat/cli-completions branch, not merged to main. The change has not been shipped. Rolling back to ready_for_shipment so the merge can be completed first.",
+    "datetime": "2026-03-23T08:45:53.894723Z",
+    "entry_id": "019d19df-3d66-7710-9041-df51a2e332bb",
+    "model": "gpt",
+    "username": "unknown",
+    "version": "5.4"
+  }
+}

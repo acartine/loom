@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19de-4ed6-7023-896f-31c75627755b",
+  "occurred_at": "2026-03-23T08:44:52.822947Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "OpenAI",
+    "content": "Implementation review approved. Clean integration of clap_complete for shell autocompletion. Workspace dep added correctly, completions subcommand accepts Shell value enum (bash/zsh/fish/powershell/elvish), generates to stdout. 5 unit tests cover all shells. Full test suite (126+ tests) passes. No security concerns. Code is minimal and idiomatic.",
+    "datetime": "2026-03-23T08:44:52.822947Z",
+    "entry_id": "019d19de-4ed6-7023-896f-31bca914b01c",
+    "model": "gpt",
+    "username": "unknown",
+    "version": "5.4"
+  }
+}

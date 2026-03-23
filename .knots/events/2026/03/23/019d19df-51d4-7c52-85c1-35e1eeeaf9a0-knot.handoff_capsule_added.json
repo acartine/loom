@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19df-51d4-7c52-85c1-35e1eeeaf9a0",
+  "occurred_at": "2026-03-23T08:45:59.124513Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "OpenAI",
+    "content": "Shipment review rejected: commit 2d8038fc71bd is on feat/cli-completions but not merged to main. The shipment step (merge to main) must be completed before shipment review can approve. Rolled status back to ready_for_shipment.",
+    "datetime": "2026-03-23T08:45:59.124513Z",
+    "entry_id": "019d19df-51d4-7c52-85c1-35d7160265ef",
+    "model": "gpt",
+    "username": "unknown",
+    "version": "5.4"
+  }
+}

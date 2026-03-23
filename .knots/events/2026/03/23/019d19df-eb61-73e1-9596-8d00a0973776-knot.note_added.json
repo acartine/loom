@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19df-eb61-73e1-9596-8d00a0973776",
+  "occurred_at": "2026-03-23T08:46:38.433621Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "## Plan: Fix `loom update` redirect URL parsing\n\n### Root Cause\n`resolve_latest_tag()` in `crates/loom-cli/src/commands/update.rs` uses a client with `redirect::Policy::limited(10)` for the HEAD request. GitHub's release redirect chain is:\n\n1. `/releases/latest/download/{file}` → 302 → `/releases/download/{tag}/{file}` ← has \"download\", parseable\n2. `/releases/download/{tag}/{file}` → 302 → `https://objects.githubusercontent.com/...` ← CDN, no \"download\" path\n\nAfter following all redirects, `response.url()` returns the CDN URL, which fails `parse_release_tag_from_url` because it lacks `/download/` in the path.\n\nThe integration test only simulates one redirect (latest → tagged → 200), so it doesn't reproduce this.\n\n### Fix\n\n**In `resolve_latest_tag()`**: Build a separate no-redirect client for the HEAD request. Read the `Location` header from the 302 response directly, which will be the `/releases/download/{tag}/...` URL. Parse the tag from that.\n\nSteps:\n1. In `resolve_latest_tag`, build a one-off client with `redirect::Policy::none()`\n2. Send the HEAD request, get the 302 response\n3. Extract the Location header from the response\n4. Use `redirected_location()` (already exists) to handle relative URLs\n5. If the location URL still contains \"latest\" (unlikely but defensive), follow one more hop\n6. Parse the tag from the resolved URL via existing `parse_release_tag_from_url()`\n\n### Files Changed\n- `crates/loom-cli/src/commands/update.rs` — modify `resolve_latest_tag()` to use a no-redirect client\n\n### Test Strategy\n- Update integration test stub to add a second redirect hop (tagged → CDN URL like `/cdn/blob/...`) to reproduce the real GitHub behavior\n- Existing unit tests for `parse_release_tag_from_url` remain valid\n- Add a unit test that verifies tag extraction from a 302 Location header\n\n### Risks\n- Low risk. The change is isolated to how `resolve_latest_tag` discovers the version tag. The download itself (in `download_to_path`) still uses the redirect-following client, which is correct.\n\n### Complexity\nSmall — ~15 lines of code change + ~20 lines test update.",
+    "datetime": "2026-03-23T08:46:38.433621Z",
+    "entry_id": "019d19df-eb61-73e1-9596-8cf57279d94b",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}

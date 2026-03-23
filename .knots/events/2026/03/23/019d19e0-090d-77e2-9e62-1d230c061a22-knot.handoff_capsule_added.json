@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e0-090d-77e2-9e62-1d230c061a22",
+  "occurred_at": "2026-03-23T08:46:46.029755Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Plan complete. Root cause: resolve_latest_tag() follows all redirects, landing on GitHub CDN URL (objects.githubusercontent.com) that lacks /download/ path segment. Fix: use a no-redirect client for the HEAD request in resolve_latest_tag() and parse the tag from the first Location header. Also update integration test to simulate the second CDN redirect hop. Small change (~15 LOC + test update).",
+    "datetime": "2026-03-23T08:46:46.029755Z",
+    "entry_id": "019d19e0-090d-77e2-9e62-1d15629642b7",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19e1-d3ca-7ff3-aa24-309421f4295a",
+  "occurred_at": "2026-03-23T08:48:43.466206Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Plan revision needed: the proposed fix correctly identifies the redirect-chain root cause, but it reuses redirected_location() without accounting for root-relative Location headers. That helper currently concatenates the Location value onto the full request URL, which would produce an invalid URL for redirects like '/acartine/loom/releases/download/<tag>/...'. Please revise the plan to include correct relative URL resolution for the HEAD probe (for example via URL joining semantics) and tests that cover both a relative release redirect and the extra CDN hop.",
+    "datetime": "2026-03-23T08:48:43.466206Z",
+    "entry_id": "019d19e1-d3ca-7ff3-aa24-30882a0b932c",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
