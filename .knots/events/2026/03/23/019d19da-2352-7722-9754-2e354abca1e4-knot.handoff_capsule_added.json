@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19da-2352-7722-9754-2e354abca1e4",
+  "occurred_at": "2026-03-23T08:40:19.538184Z",
+  "knot_id": "loom-f0dc",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "OpenAI",
+    "content": "Plan review rejected: planning phase produced no documented plan (empty notes). Sent back to planning with detailed guidance on expected implementation steps for adding clap_complete-based shell completions.",
+    "datetime": "2026-03-23T08:40:19.538184Z",
+    "entry_id": "019d19da-2352-7722-9754-2e2bec1a2e6a",
+    "model": "gpt",
+    "username": "unknown",
+    "version": "5.4"
+  }
+}
