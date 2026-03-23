@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19ee-4c5e-74e0-bdf7-8d752d03a019",
+  "occurred_at": "2026-03-23T09:02:20.766433Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Codex",
+    "content": "Completed the redirect-chain fix on branch fix/loom-update-redirect at commit b5a8b64c306a. The update flow now resolves the latest tag from the first GitHub redirect and pins archive/checksum downloads to that tag instead of parsing the final CDN URL. Integration coverage now models the real two-hop GitHub redirect chain, and cargo test -p loom-cli passed.",
+    "datetime": "2026-03-23T09:02:08Z",
+    "entry_id": "019d19ee-4c5e-74e0-bdf7-8d68ec5d79b9",
+    "model": "GPT-5",
+    "username": "cartine",
+    "version": "gpt-5-codex"
+  }
+}
