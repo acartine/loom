@@ -2,6 +2,7 @@ mod commands;
 mod templates;
 
 use clap::{Parser, Subcommand};
+use clap_complete::Shell;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -112,6 +113,12 @@ enum Commands {
         #[arg(long)]
         purge: bool,
     },
+    /// Generate shell completion scripts
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 }
 
 #[derive(Subcommand)]
@@ -183,5 +190,9 @@ fn main() -> miette::Result<()> {
         } => commands::compat::run(&old_dir, &new_dir, emit_map),
         Commands::Update { check, force } => commands::update::run(check, force),
         Commands::Uninstall { force, purge } => commands::uninstall::run(force, purge),
+        Commands::Completions { shell } => {
+            commands::completions::run(shell);
+            Ok(())
+        }
     }
 }

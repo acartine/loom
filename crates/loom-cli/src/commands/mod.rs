@@ -1,5 +1,6 @@
 pub mod build;
 pub mod compat;
+pub mod completions;
 pub mod diff;
 pub mod graph;
 pub mod init;
