@@ -1,0 +1,20 @@
+{
+  "event_id": "019d19f1-eae1-7020-8b3a-241373127f0a",
+  "occurred_at": "2026-03-23T09:06:17.94085Z",
+  "type": "idx.knot_head",
+  "data": {
+    "deferred_from_state": null,
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "invariants": [],
+    "knot_id": "loom-6d6f",
+    "profile_id": "autopilot",
+    "state": "shipment",
+    "terminal": false,
+    "title": "Loom update throws error",
+    "type": "work",
+    "updated_at": "2026-03-23T09:06:17.94085Z",
+    "workflow_id": "compatibility"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "event_id": "019d19f1-ead4-7470-9de7-5e9207853e32",
+  "occurred_at": "2026-03-23T09:06:17.94085Z",
+  "knot_id": "loom-6d6f",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Shipment complete. Merged fix/loom-update-redirect to main (commit 14694d82e7f2) with --no-ff. Pushed to origin. CI run 23429447943 passed: format, lint, test, and shell syntax all green.",
+    "datetime": "2026-03-23T09:06:17.94085Z",
+    "entry_id": "019d19f1-ead4-7470-9de7-5e8ef3c84fa5",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
