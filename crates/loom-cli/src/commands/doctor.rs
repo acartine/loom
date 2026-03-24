@@ -400,12 +400,16 @@ fn fix_completions() -> miette::Result<String> {
             fs::create_dir_all(&dir)
                 .map_err(|e| miette::miette!("failed to create {}: {e}", dir.display()))?;
             let dest = dir.join("loom");
-            (
-                Shell::Bash,
-                dest,
-                home.join(".bashrc"),
-                BASH_COMPLETION_BLOCK,
-            )
+            // Use ~/.bashrc if it exists; fall back to ~/.bash_profile if
+            // that's the only startup file present (common on macOS).
+            let rc_path = if home.join(".bashrc").exists() {
+                home.join(".bashrc")
+            } else if home.join(".bash_profile").exists() {
+                home.join(".bash_profile")
+            } else {
+                home.join(".bashrc")
+            };
+            (Shell::Bash, dest, rc_path, BASH_COMPLETION_BLOCK)
         }
         "fish" => {
             let home = home_dir().ok_or_else(|| miette::miette!("$HOME not set"))?;
@@ -633,6 +637,65 @@ fi
         match original_shell {
             Some(v) => env::set_var("SHELL", v),
             None => env::remove_var("SHELL"),
+        }
+    }
+
+    #[test]
+    fn fix_completions_uses_bash_profile_when_bashrc_absent() {
+        let _guard = env_lock();
+        let tmpdir = tempfile::tempdir().unwrap();
+        let original_home = env::var("HOME").ok();
+        let original_shell = env::var("SHELL").ok();
+
+        // Create only .bash_profile (no .bashrc), simulating a macOS login-shell setup
+        fs::write(tmpdir.path().join(".bash_profile"), "# login shell\n").unwrap();
+
+        env::set_var("HOME", tmpdir.path().to_str().unwrap());
+        env::set_var("SHELL", "/bin/bash");
+
+        fix_completions().unwrap();
+
+        assert!(tmpdir.path().join(".bash_completion.d/loom").exists());
+        // .bashrc should NOT have been created
+        assert!(!tmpdir.path().join(".bashrc").exists());
+        // .bash_profile should contain the completion wiring
+        let bash_profile = fs::read_to_string(tmpdir.path().join(".bash_profile")).unwrap();
+        assert!(bash_profile.contains(BASH_COMPLETION_MARKER));
+        assert!(check_bash_completions());
+
+        match original_home {
+            Some(v) => env::set_var("HOME", v),
+            None => env::remove_var("HOME"),
+        }
+        match original_shell {
+            Some(v) => env::set_var("SHELL", v),
+            None => env::remove_var("SHELL"),
+        }
+    }
+
+    #[test]
+    fn check_bash_completions_via_bash_profile_only() {
+        let _guard = env_lock();
+        let tmpdir = tempfile::tempdir().unwrap();
+
+        // Set up completion file + wiring only in .bash_profile (no .bashrc)
+        let comp_dir = tmpdir.path().join(".bash_completion.d");
+        fs::create_dir_all(&comp_dir).unwrap();
+        fs::write(comp_dir.join("loom"), "# completions").unwrap();
+        fs::write(
+            tmpdir.path().join(".bash_profile"),
+            BASH_COMPLETION_BLOCK,
+        )
+        .unwrap();
+
+        let original = env::var("HOME").ok();
+        env::set_var("HOME", tmpdir.path().to_str().unwrap());
+
+        assert!(check_bash_completions());
+
+        match original {
+            Some(v) => env::set_var("HOME", v),
+            None => env::remove_var("HOME"),
         }
     }
 }
