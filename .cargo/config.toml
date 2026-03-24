@@ -1,0 +1,2 @@
+[alias]
+diag = "test --test getting_started_integration -- --ignored --nocapture"

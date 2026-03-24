@@ -148,7 +148,7 @@ fn generate_outcome_is_success_method(
             .map(|k| format!("{}.{}", class_name, to_upper_snake(k)))
             .collect();
         out.push_str(&format!(
-            "        return self in ({})\n",
+            "        return self in ({},)\n",
             success_members.join(", ")
         ));
     }

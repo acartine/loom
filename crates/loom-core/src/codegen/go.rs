@@ -108,9 +108,15 @@ fn generate_outcome_types(ir: &WorkflowIR, out: &mut String) {
     }
 }
 
+/// Returns the prefixed constant name for an outcome variant.
+/// E.g., action "planning" + outcome "plan_complete" → "PlanningPlanComplete"
+fn outcome_const_name(action_name: &str, outcome: &str) -> String {
+    format!("{}{}", to_pascal_case(action_name), to_pascal_case(outcome))
+}
+
 fn generate_single_outcome_type(
     type_name: &str,
-    _action_name: &str,
+    action_name: &str,
     prompt: &crate::prompt::PromptFile,
     out: &mut String,
 ) {
@@ -121,29 +127,26 @@ fn generate_single_outcome_type(
         prompt.success.iter().chain(prompt.failure.iter()).collect();
 
     for (i, (outcome, _)) in outcomes.iter().enumerate() {
+        let const_name = outcome_const_name(action_name, outcome);
         if i == 0 {
-            out.push_str(&format!(
-                "\t{} {} = iota\n",
-                to_pascal_case(outcome),
-                type_name
-            ));
+            out.push_str(&format!("\t{} {} = iota\n", const_name, type_name));
         } else {
-            out.push_str(&format!("\t{}\n", to_pascal_case(outcome)));
+            out.push_str(&format!("\t{}\n", const_name));
         }
     }
     out.push_str(")\n\n");
 
-    generate_outcome_target(type_name, prompt, out);
-    generate_outcome_is_success(type_name, prompt, out);
+    generate_outcome_target(type_name, action_name, prompt, out);
+    generate_outcome_is_success(type_name, action_name, prompt, out);
 }
 
-fn generate_outcome_target(type_name: &str, prompt: &crate::prompt::PromptFile, out: &mut String) {
+fn generate_outcome_target(type_name: &str, action_name: &str, prompt: &crate::prompt::PromptFile, out: &mut String) {
     out.push_str(&format!("func (o {}) Target() State {{\n", type_name));
     out.push_str("\tswitch o {\n");
     for (outcome, target) in prompt.success.iter().chain(prompt.failure.iter()) {
         out.push_str(&format!(
             "\tcase {}:\n\t\treturn {}\n",
-            to_pascal_case(outcome),
+            outcome_const_name(action_name, outcome),
             to_pascal_case(target)
         ));
     }
@@ -154,6 +157,7 @@ fn generate_outcome_target(type_name: &str, prompt: &crate::prompt::PromptFile, 
 
 fn generate_outcome_is_success(
     type_name: &str,
+    action_name: &str,
     prompt: &crate::prompt::PromptFile,
     out: &mut String,
 ) {
@@ -161,14 +165,14 @@ fn generate_outcome_is_success(
     if prompt.success.is_empty() {
         out.push_str("\treturn false\n");
     } else if prompt.success.len() == 1 {
-        let name = to_pascal_case(prompt.success.keys().next().unwrap());
+        let name = outcome_const_name(action_name, prompt.success.keys().next().unwrap());
         out.push_str(&format!("\treturn o == {}\n", name));
     } else {
         out.push_str("\tswitch o {\n");
         for key in prompt.success.keys() {
             out.push_str(&format!(
                 "\tcase {}:\n\t\treturn true\n",
-                to_pascal_case(key)
+                outcome_const_name(action_name, key)
             ));
         }
         out.push_str("\tdefault:\n\t\treturn false\n");
@@ -469,10 +473,10 @@ mod tests {
         let code = generate(&ir);
 
         assert!(code.contains("type PlanningOutcome int"));
-        assert!(code.contains("PlanComplete PlanningOutcome = iota"));
+        assert!(code.contains("PlanningPlanComplete PlanningOutcome = iota"));
         assert!(code.contains("func (o PlanningOutcome) Target() State {"));
         assert!(code.contains("func (o PlanningOutcome) IsSuccess() bool {"));
-        assert!(code.contains("return o == PlanComplete"));
+        assert!(code.contains("return o == PlanningPlanComplete"));
     }
 
     #[test]
