@@ -1,0 +1,15 @@
+{
+  "event_id": "019d201e-cde4-7a01-93e1-aae3111d4267",
+  "occurred_at": "2026-03-24T13:53:02.948133Z",
+  "knot_id": "loom-9231",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "unknown",
+    "content": "Plan review approved. Existing CLI structure supports this cleanly: add a Doctor subcommand, reuse update-version resolution logic from update.rs, and add shell-specific completion detection/install paths. Keep completion detection explicitly heuristic in user-facing output, handle offline/version-check failures as non-fatal doctor results, and expose only the minimum update.rs helpers needed for structured status checks. Test coverage should include shell detection, temp-home completion detection/install, and doctor output/fix flows where network-independent.",
+    "datetime": "2026-03-24T13:53:02.948133Z",
+    "entry_id": "019d201e-cde4-7a01-93e1-aad01e86e3ff",
+    "model": "unknown",
+    "username": "unknown",
+    "version": "unknown"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "event_id": "019d2025-7b16-74b0-9922-2a2a87223327",
+  "occurred_at": "2026-03-24T14:00:20.502508Z",
+  "knot_id": "loom-9231",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Implementation complete on branch feat/doctor-command. PR #2 opened at https://github.com/acartine/loom/pull/2. Added loom doctor command with version check (reusing update.rs infra) and shell completion detection for zsh/bash/fish. --fix flag auto-updates and installs completions. 4 new unit tests, all 135 tests pass, zero clippy warnings.",
+    "datetime": "2026-03-24T14:00:20.502508Z",
+    "entry_id": "019d2025-7b16-74b0-9922-2a175a4ebe51",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
