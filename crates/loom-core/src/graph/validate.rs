@@ -170,37 +170,6 @@ fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
             }
         }
     }
-
-    // Symmetric failure routing
-    for (prompt_name, prompt) in &ir.prompts {
-        if prompt.failure.len() > 1 {
-            let targets: HashSet<&String> = prompt.failure.values().collect();
-            if targets.len() == 1 {
-                let target = targets.into_iter().next().unwrap();
-                if let Some(action_name) = ir.states.values().find_map(|s| {
-                    if let StateDef::Action {
-                        name,
-                        prompt_name: pn,
-                        ..
-                    } = s
-                    {
-                        if pn == prompt_name {
-                            Some(name.clone())
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                }) {
-                    diag.warn(LoomWarning::SymmetricFailureRouting {
-                        name: action_name,
-                        target: target.clone(),
-                    });
-                }
-            }
-        }
-    }
 }
 
 #[cfg(test)]

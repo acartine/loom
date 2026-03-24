@@ -83,7 +83,6 @@ pub enum LoomWarning {
     UnusedState { name: String },
     UnusedStep { name: String },
     SingleOutcomeAction { name: String },
-    SymmetricFailureRouting { name: String, target: String },
 }
 
 impl std::fmt::Display for LoomWarning {
@@ -103,12 +102,6 @@ impl std::fmt::Display for LoomWarning {
             }
             LoomWarning::SingleOutcomeAction { name } => {
                 write!(f, "warning: action '{name}' has only one success outcome and zero failure outcomes")
-            }
-            LoomWarning::SymmetricFailureRouting { name, target } => {
-                write!(
-                    f,
-                    "warning: all failure outcomes for '{name}' route to '{target}'"
-                )
             }
         }
     }

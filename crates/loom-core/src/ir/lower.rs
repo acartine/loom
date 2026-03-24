@@ -95,7 +95,10 @@ pub fn lower_with_config(
                         t.name.clone(),
                         StateDef::Terminal {
                             name: t.name.clone(),
-                            display_name: t.display_name.clone().unwrap_or_else(|| t.name.clone()),
+                            display_name: t
+                                .display_name
+                                .clone()
+                                .unwrap_or_else(|| crate::snake_to_title_case(&t.name)),
                         },
                     );
                 }
@@ -110,7 +113,10 @@ pub fn lower_with_config(
                         e.name.clone(),
                         StateDef::Escape {
                             name: e.name.clone(),
-                            display_name: e.display_name.clone().unwrap_or_else(|| e.name.clone()),
+                            display_name: e
+                                .display_name
+                                .clone()
+                                .unwrap_or_else(|| crate::snake_to_title_case(&e.name)),
                         },
                     );
                 }

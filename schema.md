@@ -541,7 +541,6 @@ Warnings (non-fatal):
 | Unused state               | State declared but not in any step                |
 | Unused step                | Step declared but not in any phase                |
 | Single-outcome action      | Action has only one success and zero failure      |
-| Symmetric failure routing  | All failure outcomes route to the same state      |
 
 ### 3.4 Profile Subgraph Extraction
 

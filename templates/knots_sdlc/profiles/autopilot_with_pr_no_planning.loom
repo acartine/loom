@@ -5,4 +5,8 @@ profile autopilot_with_pr_no_planning "Autopilot with PR (no planning)" {
     override implementation {
         output pr
     }
+
+    override shipment {
+        output pr
+    }
 }
