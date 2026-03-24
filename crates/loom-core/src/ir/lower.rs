@@ -7,6 +7,37 @@ use crate::parse;
 use crate::parse::ast::*;
 use crate::prompt;
 
+/// Synthesize a step (and its implicit queue) for an action referenced directly by a phase.
+fn synthesize_step(
+    action_name: &str,
+    steps: &mut IndexMap<String, StepDef>,
+    states: &mut IndexMap<String, StateDef>,
+    synthesized_queues: &mut std::collections::HashSet<String>,
+) {
+    let queue_name = format!("ready_for_{}", action_name);
+    if !states.contains_key(&queue_name) {
+        let queue_display = format!("Ready for {}", crate::snake_to_title_case(action_name));
+        states.insert(
+            queue_name.clone(),
+            StateDef::Queue {
+                name: queue_name.clone(),
+                display_name: queue_display,
+            },
+        );
+        synthesized_queues.insert(queue_name.clone());
+    }
+    if !steps.contains_key(action_name) {
+        steps.insert(
+            action_name.to_string(),
+            StepDef {
+                name: action_name.to_string(),
+                queue: queue_name,
+                action: action_name.to_string(),
+            },
+        );
+    }
+}
+
 /// Lower an AST workflow into the IR.
 /// `workflow_dir` is the directory containing the workflow files (for resolving includes/prompts).
 /// `default_profile` is from loom.toml config.
@@ -252,20 +283,33 @@ pub fn lower_with_config(
         }
     }
 
-    // Check phase references
+    // Check phase references — auto-synthesize steps when phases reference actions directly
     for phase in phases.values() {
+        // Resolve produce reference: if it's an action name (not a step), synthesize a step
         if !steps.contains_key(&phase.produce_step) {
-            diag.error(LoomError::UnresolvedReference {
-                name: phase.produce_step.clone(),
-                context: format!("phase '{}' produce step reference", phase.name),
-            });
-        } else {
-            let step = &steps[&phase.produce_step];
+            if states
+                .get(&phase.produce_step)
+                .is_some_and(|s| s.is_action())
+            {
+                synthesize_step(
+                    &phase.produce_step,
+                    &mut steps,
+                    &mut states,
+                    &mut synthesized_queues,
+                );
+            } else {
+                diag.error(LoomError::UnresolvedReference {
+                    name: phase.produce_step.clone(),
+                    context: format!("phase '{}' produce reference", phase.name),
+                });
+            }
+        }
+        if let Some(step) = steps.get(&phase.produce_step) {
             if let Some(action_state) = states.get(&step.action) {
                 if action_state.is_gate() {
                     diag.error(LoomError::PhaseTypeMismatch {
                         message: format!(
-                            "phase '{}': produce step '{}' has a gate action",
+                            "phase '{}': produce '{}' is a gate action",
                             phase.name, phase.produce_step
                         ),
                     });
@@ -273,20 +317,25 @@ pub fn lower_with_config(
             }
         }
 
-        if let Some(gate_step) = &phase.gate_step {
-            if !steps.contains_key(gate_step) {
-                diag.error(LoomError::UnresolvedReference {
-                    name: gate_step.clone(),
-                    context: format!("phase '{}' gate step reference", phase.name),
-                });
-            } else {
-                let step = &steps[gate_step];
+        // Resolve gate reference (same logic)
+        if let Some(gate_ref) = &phase.gate_step {
+            if !steps.contains_key(gate_ref) {
+                if states.get(gate_ref).is_some_and(|s| s.is_action()) {
+                    synthesize_step(gate_ref, &mut steps, &mut states, &mut synthesized_queues);
+                } else {
+                    diag.error(LoomError::UnresolvedReference {
+                        name: gate_ref.clone(),
+                        context: format!("phase '{}' gate reference", phase.name),
+                    });
+                }
+            }
+            if let Some(step) = steps.get(gate_ref) {
                 if let Some(action_state) = states.get(&step.action) {
                     if action_state.is_produce() {
                         diag.error(LoomError::PhaseTypeMismatch {
                             message: format!(
-                                "phase '{}': gate step '{}' has a produce action",
-                                phase.name, gate_step
+                                "phase '{}': gate '{}' is a produce action",
+                                phase.name, gate_ref
                             ),
                         });
                     }
