@@ -60,7 +60,7 @@ fn check_dead_states(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut Diagnost
         if ir
             .states
             .get(name)
-            .is_some_and(|s| s.is_terminal() || s.is_escape())
+            .is_some_and(|s| s.is_terminal() || s.is_escape() || s.is_queue())
         {
             continue;
         }
@@ -71,7 +71,16 @@ fn check_dead_states(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut Diagnost
         if let Some(&idx) = graph.node_indices.get(name) {
             let inbound = graph.graph.edges_directed(idx, Direction::Incoming).count();
             if inbound == 0 {
-                diag.error(LoomError::DeadState { name: name.clone() });
+                // Generate a short step name hint from the action name
+                let hint = name
+                    .split('_')
+                    .map(|w| w.chars().next().unwrap_or_default().to_string())
+                    .collect::<Vec<_>>()
+                    .join("");
+                diag.error(LoomError::DeadState {
+                    name: name.clone(),
+                    hint,
+                });
             }
         }
     }
@@ -125,7 +134,7 @@ fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
         .collect();
 
     for (name, state) in &ir.states {
-        if state.is_terminal() || state.is_escape() {
+        if state.is_terminal() || state.is_escape() || state.is_queue() {
             continue;
         }
         if !step_states.contains(name) {

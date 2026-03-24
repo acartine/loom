@@ -41,8 +41,8 @@ pub enum LoomError {
         message: String,
     },
 
-    #[error("Dead state: '{name}' has no inbound transitions")]
-    DeadState { name: String },
+    #[error("No step defined for action '{name}' — add a step to connect it to the workflow (e.g., `step {hint} -> {name}`)")]
+    DeadState { name: String, hint: String },
 
     #[error("Terminal unreachable: '{name}' cannot reach any terminal state")]
     TerminalUnreachable { name: String },
@@ -91,7 +91,7 @@ impl std::fmt::Display for LoomWarning {
             LoomWarning::UnusedState { name } => {
                 write!(
                     f,
-                    "warning: state '{name}' is declared but not used in any step"
+                    "warning: action '{name}' is declared but has no step — add a step to connect it to the workflow"
                 )
             }
             LoomWarning::UnusedStep { name } => {
