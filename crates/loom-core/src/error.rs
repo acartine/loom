@@ -80,7 +80,6 @@ pub enum LoomError {
 
 #[derive(Debug)]
 pub enum LoomWarning {
-    UnusedState { name: String },
     UnusedStep { name: String },
     SingleOutcomeAction { name: String },
 }
@@ -88,12 +87,6 @@ pub enum LoomWarning {
 impl std::fmt::Display for LoomWarning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LoomWarning::UnusedState { name } => {
-                write!(
-                    f,
-                    "warning: action '{name}' is declared but has no step — add a step to connect it to the workflow"
-                )
-            }
             LoomWarning::UnusedStep { name } => {
                 write!(
                     f,

@@ -126,22 +126,6 @@ fn check_orphaned_prompts(ir: &WorkflowIR, diag: &mut Diagnostics) {
 
 /// Generate warnings
 fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
-    // Unused states: states not in any step
-    let step_states: HashSet<String> = ir
-        .steps
-        .values()
-        .flat_map(|s| vec![s.queue.clone(), s.action.clone()])
-        .collect();
-
-    for (name, state) in &ir.states {
-        if state.is_terminal() || state.is_escape() || state.is_queue() {
-            continue;
-        }
-        if !step_states.contains(name) {
-            diag.warn(LoomWarning::UnusedState { name: name.clone() });
-        }
-    }
-
     // Unused steps: steps not in any phase
     let phase_steps: HashSet<String> = ir
         .phases
