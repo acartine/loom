@@ -1,0 +1,15 @@
+{
+  "event_id": "019d2035-157f-7181-b16a-7c328d7a0733",
+  "occurred_at": "2026-03-24T14:17:23.071022Z",
+  "knot_id": "loom-9231",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Shipment complete: fixed cargo fmt issue in doctor.rs bash_profile test (b76b741), pushed to main, CI green (run 23494166446). All doctor feature commits now on main: aea48c3 (feat), 926452e (fix wiring), 4f8e5db (fix bash_profile), b76b741 (fmt fix).",
+    "datetime": "2026-03-24T14:17:23.071022Z",
+    "entry_id": "019d2035-157f-7181-b16a-7c24469e231b",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
