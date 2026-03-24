@@ -682,11 +682,7 @@ fi
         let comp_dir = tmpdir.path().join(".bash_completion.d");
         fs::create_dir_all(&comp_dir).unwrap();
         fs::write(comp_dir.join("loom"), "# completions").unwrap();
-        fs::write(
-            tmpdir.path().join(".bash_profile"),
-            BASH_COMPLETION_BLOCK,
-        )
-        .unwrap();
+        fs::write(tmpdir.path().join(".bash_profile"), BASH_COMPLETION_BLOCK).unwrap();
 
         let original = env::var("HOME").ok();
         env::set_var("HOME", tmpdir.path().to_str().unwrap());
