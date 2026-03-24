@@ -273,21 +273,23 @@ pub fn lower_with_config(
             }
         }
 
-        if !steps.contains_key(&phase.gate_step) {
-            diag.error(LoomError::UnresolvedReference {
-                name: phase.gate_step.clone(),
-                context: format!("phase '{}' gate step reference", phase.name),
-            });
-        } else {
-            let step = &steps[&phase.gate_step];
-            if let Some(action_state) = states.get(&step.action) {
-                if action_state.is_produce() {
-                    diag.error(LoomError::PhaseTypeMismatch {
-                        message: format!(
-                            "phase '{}': gate step '{}' has a produce action",
-                            phase.name, phase.gate_step
-                        ),
-                    });
+        if let Some(gate_step) = &phase.gate_step {
+            if !steps.contains_key(gate_step) {
+                diag.error(LoomError::UnresolvedReference {
+                    name: gate_step.clone(),
+                    context: format!("phase '{}' gate step reference", phase.name),
+                });
+            } else {
+                let step = &steps[gate_step];
+                if let Some(action_state) = states.get(&step.action) {
+                    if action_state.is_produce() {
+                        diag.error(LoomError::PhaseTypeMismatch {
+                            message: format!(
+                                "phase '{}': gate step '{}' has a produce action",
+                                phase.name, gate_step
+                            ),
+                        });
+                    }
                 }
             }
         }
@@ -316,8 +318,10 @@ pub fn lower_with_config(
                 if let Some(step) = steps.get(&phase.produce_step) {
                     actions.push(step.action.clone());
                 }
-                if let Some(step) = steps.get(&phase.gate_step) {
-                    actions.push(step.action.clone());
+                if let Some(gs) = &phase.gate_step {
+                    if let Some(step) = steps.get(gs) {
+                        actions.push(step.action.clone());
+                    }
                 }
                 actions
             })

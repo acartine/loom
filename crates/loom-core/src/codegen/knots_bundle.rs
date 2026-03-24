@@ -49,7 +49,7 @@ struct StepBundle {
 struct PhaseBundle {
     id: String,
     produce_step: String,
-    gate_step: String,
+    gate_step: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -308,7 +308,7 @@ fn materialize_profile_executors(
 
     for phase_name in &profile.phases {
         if let Some(phase) = ir.phases.get(phase_name) {
-            for step_name in [&phase.produce_step, &phase.gate_step] {
+            for step_name in phase.step_names() {
                 if let Some(step) = ir.steps.get(step_name) {
                     if let Some(state) = ir.states.get(&step.action) {
                         let executor = profile
@@ -372,7 +372,7 @@ fn materialize_profile_outputs(
 
     for phase_name in &profile.phases {
         if let Some(phase) = ir.phases.get(phase_name) {
-            for step_name in [&phase.produce_step, &phase.gate_step] {
+            for step_name in phase.step_names() {
                 if let Some(step) = ir.steps.get(step_name) {
                     if let Some(state) = ir.states.get(&step.action) {
                         let output = profile

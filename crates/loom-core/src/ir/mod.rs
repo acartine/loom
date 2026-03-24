@@ -142,7 +142,18 @@ pub struct StepDef {
 pub struct PhaseDef {
     pub name: String,
     pub produce_step: String,
-    pub gate_step: String,
+    pub gate_step: Option<String>,
+}
+
+impl PhaseDef {
+    /// Returns all step names in this phase (produce + optional gate).
+    pub fn step_names(&self) -> Vec<&String> {
+        let mut names = vec![&self.produce_step];
+        if let Some(gs) = &self.gate_step {
+            names.push(gs);
+        }
+        names
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

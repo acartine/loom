@@ -22,7 +22,7 @@ pub fn extract_profile_subgraph(ir: &WorkflowIR, profile_name: &str) -> Option<W
             phases.insert(phase_name.clone(), phase.clone());
 
             // Collect steps from phases
-            for step_name in [&phase.produce_step, &phase.gate_step] {
+            for step_name in phase.step_names() {
                 if let Some(step) = ir.steps.get(step_name) {
                     steps.insert(step_name.clone(), step.clone());
 

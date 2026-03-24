@@ -215,7 +215,7 @@ fn build_phase(pair: pest::iterators::Pair<Rule>) -> LoomResult<PhaseDecl> {
     let body_pair = inner.next().unwrap();
     let mut body_inner = body_pair.into_inner();
     let produce_step = body_inner.next().unwrap().as_str().to_string();
-    let gate_step = body_inner.next().unwrap().as_str().to_string();
+    let gate_step = body_inner.next().map(|p| p.as_str().to_string());
     Ok(PhaseDecl {
         name,
         produce_step,
@@ -409,7 +409,7 @@ mod tests {
         if let Declaration::Phase(p) = &wf.declarations[0] {
             assert_eq!(p.name, "p1");
             assert_eq!(p.produce_step, "s1");
-            assert_eq!(p.gate_step, "s2");
+            assert_eq!(p.gate_step, Some("s2".to_string()));
         } else {
             panic!("expected phase");
         }

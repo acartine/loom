@@ -208,7 +208,7 @@ fn diff_phases(old: &WorkflowIR, new: &WorkflowIR, changes: &mut Vec<Change>) {
                         category: "phase".into(),
                         name: name.clone(),
                         detail: Some(format!(
-                            "produce {}->{}, gate {}->{}",
+                            "produce {}->{}, gate {:?}->{:?}",
                             old_phase.produce_step,
                             new_phase.produce_step,
                             old_phase.gate_step,

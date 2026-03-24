@@ -88,7 +88,10 @@ pub fn emit_toml(ir: &WorkflowIR) -> String {
     for phase in ir.phases.values() {
         out.push_str(&format!("[phases.{}]\n", phase.name));
         out.push_str(&format!("produce = \"{}\"\n", phase.produce_step));
-        out.push_str(&format!("gate = \"{}\"\n\n", phase.gate_step));
+        if let Some(gs) = &phase.gate_step {
+            out.push_str(&format!("gate = \"{}\"\n", gs));
+        }
+        out.push('\n');
     }
 
     // Profiles

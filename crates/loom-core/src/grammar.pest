@@ -80,7 +80,7 @@ phase_decl = {
 }
 
 phase_body = {
-    "produce" ~ ident ~ "gate" ~ ident
+    "produce" ~ ident ~ ("gate" ~ ident)?
 }
 
 // Profiles

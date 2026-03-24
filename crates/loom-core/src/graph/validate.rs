@@ -130,7 +130,7 @@ fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
     let phase_steps: HashSet<String> = ir
         .phases
         .values()
-        .flat_map(|p| vec![p.produce_step.clone(), p.gate_step.clone()])
+        .flat_map(|p| p.step_names().into_iter().cloned().collect::<Vec<_>>())
         .collect();
 
     for name in ir.steps.keys() {
@@ -261,7 +261,7 @@ mod tests {
             PhaseDef {
                 name: "p1".into(),
                 produce_step: "s1".into(),
-                gate_step: "s2".into(),
+                gate_step: Some("s2".into()),
             },
         );
 

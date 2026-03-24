@@ -92,7 +92,7 @@ pub struct StepDecl {
 pub struct PhaseDecl {
     pub name: String,
     pub produce_step: String,
-    pub gate_step: String,
+    pub gate_step: Option<String>,
 }
 
 #[derive(Debug, Clone)]
