@@ -1,0 +1,15 @@
+{
+  "event_id": "019d202a-bf0b-7251-981e-221ebaa316a8",
+  "occurred_at": "2026-03-24T14:06:05.57963Z",
+  "knot_id": "loom-9231",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Implemented the doctor completion fix on branch feat/doctor-command.\n\nChanges:\n- `loom doctor --fix` now wires zsh completions into `~/.zshrc` and bash completions into `~/.bashrc` instead of only writing completion files.\n- completion checks now require startup wiring for the managed zsh/bash install locations, so doctor no longer reports them as installed prematurely.\n- added regression tests for zsh/bash fix flows and serialized env-mutating doctor tests.\n\nValidation:\n- `cargo test -p loom-cli doctor`\n- `cargo test -p loom-cli`\n\nCommit:\n- `926452e` Fix doctor completion install wiring",
+    "datetime": "2026-03-24T14:06:05.57963Z",
+    "entry_id": "019d202a-bf0b-7251-981e-2201ad15883c",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
