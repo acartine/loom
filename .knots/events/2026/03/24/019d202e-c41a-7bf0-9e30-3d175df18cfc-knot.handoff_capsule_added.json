@@ -1,0 +1,15 @@
+{
+  "event_id": "019d202e-c41a-7bf0-9e30-3d175df18cfc",
+  "occurred_at": "2026-03-24T14:10:29.018129Z",
+  "knot_id": "loom-9231",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Fixed bash_profile-only wiring gap: fix_completions() now picks ~/.bash_profile when ~/.bashrc is absent, matching check_bash_completions() detection logic. Added 2 tests covering bash_profile-only check and fix paths. All 31 unit + 30 integration tests pass. PR: https://github.com/acartine/loom/pull/3 Branch: fix/doctor-bash-profile-wiring",
+    "datetime": "2026-03-24T14:10:29.018129Z",
+    "entry_id": "019d202e-c41a-7bf0-9e30-3d0505096176",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
