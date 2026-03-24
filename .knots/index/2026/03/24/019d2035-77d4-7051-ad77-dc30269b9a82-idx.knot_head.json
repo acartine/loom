@@ -1,0 +1,23 @@
+{
+  "event_id": "019d2035-77d4-7051-ad77-dc30269b9a82",
+  "occurred_at": "2026-03-24T14:17:48.244466Z",
+  "type": "idx.knot_head",
+  "data": {
+    "deferred_from_state": null,
+    "gate": {
+      "owner_kind": "agent"
+    },
+    "invariants": [],
+    "knot_id": "loom-9231",
+    "profile_id": "autopilot_with_pr",
+    "state": "shipment_review",
+    "terminal": false,
+    "title": "loom should have a doctor command to tell you if it's out of date, if it's autocomplete is installed, and a --fix option that fixes both",
+    "type": "work",
+    "updated_at": "2026-03-24T14:17:48.244466Z",
+    "workflow_id": "compatibility"
+  },
+  "precondition": {
+    "profile_etag": "019d2035-2b5a-7c62-a065-a80fb954409c"
+  }
+}
