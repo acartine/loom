@@ -17,10 +17,10 @@ use tempfile::{tempdir, NamedTempFile};
 
 const DEFAULT_BASE_URL: &str = "https://github.com/acartine/loom";
 const CHECKSUM_FILE: &str = "loom-checksums.txt";
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct ReleaseTarget {
+pub(crate) struct ReleaseTarget {
     archive_name: String,
     triple: String,
 }
@@ -35,8 +35,8 @@ impl ReleaseTarget {
 }
 
 #[derive(Debug, Clone)]
-struct ReleaseUrls {
-    archive_url: String,
+pub(crate) struct ReleaseUrls {
+    pub(crate) archive_url: String,
     checksums_url: String,
 }
 
@@ -91,7 +91,7 @@ pub fn run(check: bool, force: bool) -> miette::Result<()> {
     Ok(())
 }
 
-fn build_client() -> miette::Result<Client> {
+pub(crate) fn build_client() -> miette::Result<Client> {
     Client::builder()
         .user_agent(format!("loom-cli/{VERSION}"))
         .redirect(reqwest::redirect::Policy::limited(10))
@@ -99,11 +99,11 @@ fn build_client() -> miette::Result<Client> {
         .into_diagnostic()
 }
 
-fn release_base_url() -> String {
+pub(crate) fn release_base_url() -> String {
     env::var("LOOM_UPDATE_BASE_URL").unwrap_or_else(|_| DEFAULT_BASE_URL.to_owned())
 }
 
-fn detect_release_target() -> miette::Result<ReleaseTarget> {
+pub(crate) fn detect_release_target() -> miette::Result<ReleaseTarget> {
     let os = env::var("LOOM_UPDATE_TEST_OS").unwrap_or_else(|_| env::consts::OS.to_owned());
     let arch = env::var("LOOM_UPDATE_TEST_ARCH").unwrap_or_else(|_| env::consts::ARCH.to_owned());
     map_target(&os, &arch)
@@ -129,7 +129,11 @@ fn map_target(os: &str, arch: &str) -> miette::Result<ReleaseTarget> {
     }
 }
 
-fn release_urls(base_url: &str, target: &ReleaseTarget, tag: Option<&str>) -> ReleaseUrls {
+pub(crate) fn release_urls(
+    base_url: &str,
+    target: &ReleaseTarget,
+    tag: Option<&str>,
+) -> ReleaseUrls {
     let trimmed = base_url.trim_end_matches('/');
     let archive_url = match tag {
         Some(tag) => format!("{trimmed}/releases/download/{tag}/{}", target.archive_name),
@@ -146,7 +150,7 @@ fn release_urls(base_url: &str, target: &ReleaseTarget, tag: Option<&str>) -> Re
     }
 }
 
-fn resolve_latest_tag(_client: &Client, archive_url: &str) -> miette::Result<String> {
+pub(crate) fn resolve_latest_tag(_client: &Client, archive_url: &str) -> miette::Result<String> {
     // Use a no-redirect client so we stop at the first 3xx hop.
     // GitHub redirects /releases/latest/download/... to /releases/download/{tag}/...
     // and then to a CDN URL. We need the intermediate URL that contains the tag.
@@ -195,7 +199,7 @@ fn parse_release_tag_from_url(url: &str) -> miette::Result<String> {
     Ok((*tag).to_owned())
 }
 
-fn normalize_version(raw: &str) -> miette::Result<Version> {
+pub(crate) fn normalize_version(raw: &str) -> miette::Result<Version> {
     Version::parse(raw.trim_start_matches('v')).into_diagnostic()
 }
 

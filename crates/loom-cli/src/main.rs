@@ -113,6 +113,12 @@ enum Commands {
         #[arg(long)]
         purge: bool,
     },
+    /// Check the health of your loom installation
+    Doctor {
+        /// Automatically fix any issues found
+        #[arg(long)]
+        fix: bool,
+    },
     /// Generate shell completion scripts
     Completions {
         /// Shell to generate completions for
@@ -190,6 +196,7 @@ fn main() -> miette::Result<()> {
         } => commands::compat::run(&old_dir, &new_dir, emit_map),
         Commands::Update { check, force } => commands::update::run(check, force),
         Commands::Uninstall { force, purge } => commands::uninstall::run(force, purge),
+        Commands::Doctor { fix } => commands::doctor::run(fix),
         Commands::Completions { shell } => {
             commands::completions::run(shell);
             Ok(())

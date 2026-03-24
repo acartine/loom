@@ -2,6 +2,7 @@ pub mod build;
 pub mod compat;
 pub mod completions;
 pub mod diff;
+pub mod doctor;
 pub mod graph;
 pub mod init;
 pub mod install_paths;
