@@ -347,10 +347,27 @@ pub fn lower_with_config(
         }
     }
 
-    // Check outcome targets
+    // Check outcome targets — synthesize implicit queues if needed
     for (prompt_name, pf) in &prompts {
         for (outcome, target) in pf.success.iter().chain(pf.failure.iter()) {
             if !states.contains_key(target) {
+                // If target looks like ready_for_<action> and that action exists,
+                // synthesize the queue state automatically.
+                if let Some(action_name) = target.strip_prefix("ready_for_") {
+                    if states.contains_key(action_name) {
+                        let queue_display =
+                            format!("Ready for {}", crate::snake_to_title_case(action_name));
+                        states.insert(
+                            target.clone(),
+                            StateDef::Queue {
+                                name: target.clone(),
+                                display_name: queue_display,
+                            },
+                        );
+                        synthesized_queues.insert(target.clone());
+                        continue;
+                    }
+                }
                 diag.error(LoomError::InvalidOutcomeTarget {
                     prompt: prompt_name.clone(),
                     outcome: outcome.clone(),
