@@ -140,7 +140,12 @@ fn generate_single_outcome_type(
     generate_outcome_is_success(type_name, action_name, prompt, out);
 }
 
-fn generate_outcome_target(type_name: &str, action_name: &str, prompt: &crate::prompt::PromptFile, out: &mut String) {
+fn generate_outcome_target(
+    type_name: &str,
+    action_name: &str,
+    prompt: &crate::prompt::PromptFile,
+    out: &mut String,
+) {
     out.push_str(&format!("func (o {}) Target() State {{\n", type_name));
     out.push_str("\tswitch o {\n");
     for (outcome, target) in prompt.success.iter().chain(prompt.failure.iter()) {

@@ -126,7 +126,10 @@ fn getting_started_walkthrough() {
 
     // ── Step 4: Read the scaffold ──────────────────────────────
     println!("Step 4: Verify scaffold structure");
-    assert!(knots_dir.join("workflow.loom").exists(), "missing workflow.loom");
+    assert!(
+        knots_dir.join("workflow.loom").exists(),
+        "missing workflow.loom"
+    );
     assert!(knots_dir.join("loom.toml").exists(), "missing loom.toml");
     assert!(knots_dir.join("prompts").is_dir(), "missing prompts/");
     assert!(knots_dir.join("profiles").is_dir(), "missing profiles/");
@@ -559,8 +562,14 @@ print("python codegen assertions passed")
         let table = parsed.as_table().expect("TOML root should be a table");
 
         // All top-level sections present
-        for section in ["workflow", "states", "steps", "phases", "profiles", "prompts"] {
-            assert!(table.contains_key(section), "missing top-level section: {}", section);
+        for section in [
+            "workflow", "states", "steps", "phases", "profiles", "prompts",
+        ] {
+            assert!(
+                table.contains_key(section),
+                "missing top-level section: {}",
+                section
+            );
         }
 
         // Workflow metadata
@@ -578,15 +587,34 @@ print("python codegen assertions passed")
         assert_eq!(planning["action_type"].as_str().unwrap(), "produce");
         assert_eq!(planning["executor"].as_str().unwrap(), "agent");
 
-        let plan_review = states["plan_review"].as_table().expect("states.plan_review");
+        let plan_review = states["plan_review"]
+            .as_table()
+            .expect("states.plan_review");
         assert_eq!(plan_review["action_type"].as_str().unwrap(), "gate");
         assert_eq!(plan_review["gate_kind"].as_str().unwrap(), "review");
-        let constraints = plan_review["constraints"].as_array().expect("constraints array");
+        let constraints = plan_review["constraints"]
+            .as_array()
+            .expect("constraints array");
         assert!(constraints.iter().any(|c| c.as_str() == Some("read_only")));
 
-        assert_eq!(states["shipped"].as_table().unwrap()["kind"].as_str().unwrap(), "terminal");
-        assert_eq!(states["deferred"].as_table().unwrap()["kind"].as_str().unwrap(), "escape");
-        assert_eq!(states["ready_for_planning"].as_table().unwrap()["kind"].as_str().unwrap(), "queue");
+        assert_eq!(
+            states["shipped"].as_table().unwrap()["kind"]
+                .as_str()
+                .unwrap(),
+            "terminal"
+        );
+        assert_eq!(
+            states["deferred"].as_table().unwrap()["kind"]
+                .as_str()
+                .unwrap(),
+            "escape"
+        );
+        assert_eq!(
+            states["ready_for_planning"].as_table().unwrap()["kind"]
+                .as_str()
+                .unwrap(),
+            "queue"
+        );
 
         // Steps
         let steps = table["steps"].as_table().expect("steps section");
@@ -598,28 +626,61 @@ print("python codegen assertions passed")
         let phases = table["phases"].as_table().expect("phases section");
         assert_eq!(phases.len(), 3, "expected 3 phases");
         for phase_name in ["planning_phase", "implementation_phase", "shipment_phase"] {
-            let phase = phases[phase_name].as_table().unwrap_or_else(|| panic!("missing phase {}", phase_name));
-            assert!(phase.contains_key("produce"), "{} missing produce", phase_name);
+            let phase = phases[phase_name]
+                .as_table()
+                .unwrap_or_else(|| panic!("missing phase {}", phase_name));
+            assert!(
+                phase.contains_key("produce"),
+                "{} missing produce",
+                phase_name
+            );
             assert!(phase.contains_key("gate"), "{} missing gate", phase_name);
         }
 
         // Profiles
         let profiles = table["profiles"].as_table().expect("profiles section");
         for profile_name in ["autopilot", "autopilot_with_pr", "semiauto"] {
-            assert!(profiles.contains_key(profile_name), "missing profile: {}", profile_name);
+            assert!(
+                profiles.contains_key(profile_name),
+                "missing profile: {}",
+                profile_name
+            );
         }
-        let autopilot = profiles["autopilot"].as_table().expect("profiles.autopilot");
+        let autopilot = profiles["autopilot"]
+            .as_table()
+            .expect("profiles.autopilot");
         assert!(!autopilot["description"].as_str().unwrap().is_empty());
         let ap_phases = autopilot["phases"].as_array().expect("autopilot phases");
         assert_eq!(ap_phases.len(), 3);
 
         // Prompts
         let prompts = table["prompts"].as_table().expect("prompts section");
-        for prompt_name in ["planning", "plan_review", "implementation", "implementation_review", "shipment", "shipment_review"] {
-            let prompt = prompts[prompt_name].as_table().unwrap_or_else(|| panic!("missing prompt {}", prompt_name));
-            assert!(prompt.contains_key("accept"), "{} missing accept", prompt_name);
-            assert!(prompt.contains_key("success"), "{} missing success outcomes", prompt_name);
-            assert!(prompt.contains_key("failure"), "{} missing failure outcomes", prompt_name);
+        for prompt_name in [
+            "planning",
+            "plan_review",
+            "implementation",
+            "implementation_review",
+            "shipment",
+            "shipment_review",
+        ] {
+            let prompt = prompts[prompt_name]
+                .as_table()
+                .unwrap_or_else(|| panic!("missing prompt {}", prompt_name));
+            assert!(
+                prompt.contains_key("accept"),
+                "{} missing accept",
+                prompt_name
+            );
+            assert!(
+                prompt.contains_key("success"),
+                "{} missing success outcomes",
+                prompt_name
+            );
+            assert!(
+                prompt.contains_key("failure"),
+                "{} missing failure outcomes",
+                prompt_name
+            );
         }
         println!("    parse + validate OK");
     }
@@ -680,7 +741,10 @@ print("python codegen assertions passed")
     assert_success(&init2_out, "loom init my_workflow");
 
     let my_dir = projects_dir.join("my_workflow");
-    assert!(my_dir.join("workflow.loom").exists(), "missing workflow.loom");
+    assert!(
+        my_dir.join("workflow.loom").exists(),
+        "missing workflow.loom"
+    );
     assert!(my_dir.join("loom.toml").exists(), "missing loom.toml");
 
     let val2_out = run_loom(&loom, &["validate", my_dir.to_str().unwrap()]);
