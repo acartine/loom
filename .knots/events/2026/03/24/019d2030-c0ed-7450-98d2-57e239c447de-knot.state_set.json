@@ -1,0 +1,17 @@
+{
+  "event_id": "019d2030-c0ed-7450-98d2-57e239c447de",
+  "occurred_at": "2026-03-24T14:12:39.277564Z",
+  "knot_id": "loom-9231",
+  "type": "knot.state_set",
+  "data": {
+    "actor_kind": "agent",
+    "force": false,
+    "from": "ready_for_shipment",
+    "profile_id": "autopilot_with_pr",
+    "to": "shipment",
+    "workflow_id": "compatibility"
+  },
+  "precondition": {
+    "profile_etag": "019d2030-7875-7491-a34c-4be083a06a1f"
+  }
+}
