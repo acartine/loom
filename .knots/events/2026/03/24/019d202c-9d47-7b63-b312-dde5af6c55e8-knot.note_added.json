@@ -1,0 +1,15 @@
+{
+  "event_id": "019d202c-9d47-7b63-b312-dde5af6c55e8",
+  "occurred_at": "2026-03-24T14:08:08.007809Z",
+  "knot_id": "loom-9231",
+  "type": "knot.note_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "Implementation review rejected: bash completion fix only appends to ~/.bashrc, but the checker accepts ~/.bash_profile as a startup path. In bash login-shell setups that do not source ~/.bashrc, loom doctor --fix can report completions fixed even though autocomplete still will not load. Add a fix path and regression test that cover bash_profile-only startup wiring, or otherwise guarantee bash startup wiring in the environments the check treats as installed. Validation rerun: cargo test -p loom-cli doctor; cargo test -p loom-cli.",
+    "datetime": "2026-03-24T14:08:08.007809Z",
+    "entry_id": "019d202c-9d47-7b63-b312-ddd7e74ef4de",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}

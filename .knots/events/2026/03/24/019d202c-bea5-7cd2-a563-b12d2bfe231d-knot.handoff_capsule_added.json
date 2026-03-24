@@ -1,0 +1,15 @@
+{
+  "event_id": "019d202c-bea5-7cd2-a563-b12d2bfe231d",
+  "occurred_at": "2026-03-24T14:08:16.549548Z",
+  "knot_id": "loom-9231",
+  "type": "knot.handoff_capsule_added",
+  "data": {
+    "agentname": "Claude",
+    "content": "1. crates/loom-cli/src/commands/doctor.rs:329-337 considers bash completions installed when either ~/.bashrc or ~/.bash_profile wires in ~/.bash_completion.d/loom, but fix_completions() at crates/loom-cli/src/commands/doctor.rs:397-408 only appends the managed block to ~/.bashrc. For bash login-shell environments that read ~/.bash_profile without sourcing ~/.bashrc, loom doctor --fix still does not actually enable autocomplete even though subsequent doctor runs can report success. 2. Test coverage only exercises the ~/.bashrc path at crates/loom-cli/src/commands/doctor.rs:613-627, so the bash_profile-only startup case that the checker claims to support is currently untested. Validation rerun during review: cargo test -p loom-cli doctor; cargo test -p loom-cli.",
+    "datetime": "2026-03-24T14:08:16.549548Z",
+    "entry_id": "019d202c-bea5-7cd2-a563-b115b7b181ba",
+    "model": "opus/claude",
+    "username": "unknown",
+    "version": "4.6"
+  }
+}
