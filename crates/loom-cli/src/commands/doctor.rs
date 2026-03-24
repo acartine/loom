@@ -6,7 +6,28 @@ use clap::CommandFactory;
 use clap_complete::Shell;
 use std::env;
 use std::fs;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+
+const ZSH_COMPLETION_MARKER: &str = "# >>> loom completions >>>";
+const ZSH_COMPLETION_BLOCK: &str = r#"# >>> loom completions >>>
+if [[ -d "$HOME/.zfunc" ]]; then
+  fpath=("$HOME/.zfunc" $fpath)
+fi
+if ! whence -w compdef >/dev/null 2>&1; then
+  autoload -Uz compinit
+  compinit
+fi
+# <<< loom completions <<<
+"#;
+
+const BASH_COMPLETION_MARKER: &str = "# >>> loom completions >>>";
+const BASH_COMPLETION_BLOCK: &str = r#"# >>> loom completions >>>
+if [ -f "$HOME/.bash_completion.d/loom" ]; then
+  . "$HOME/.bash_completion.d/loom"
+fi
+# <<< loom completions <<<
+"#;
 
 enum CheckStatus {
     Ok,
@@ -232,6 +253,35 @@ fn home_dir() -> Option<PathBuf> {
     env::var("HOME").ok().map(PathBuf::from)
 }
 
+fn read_file_if_exists(path: &Path) -> Option<String> {
+    match fs::read_to_string(path) {
+        Ok(content) => Some(content),
+        Err(err) if err.kind() == ErrorKind::NotFound => None,
+        Err(_) => None,
+    }
+}
+
+fn zsh_rc_loads_loom(path: &Path) -> bool {
+    read_file_if_exists(path)
+        .map(|content| {
+            content.contains(ZSH_COMPLETION_MARKER)
+                || (content.contains(".zfunc")
+                    && (content.contains("compinit") || content.contains("compdef")))
+        })
+        .unwrap_or(false)
+}
+
+fn bash_rc_loads_loom(path: &Path) -> bool {
+    read_file_if_exists(path)
+        .map(|content| {
+            content.contains(BASH_COMPLETION_MARKER)
+                || content.contains(".bash_completion.d/loom")
+                || (content.contains(".bash_completion.d")
+                    && (content.contains("source") || content.contains(". \"$HOME/")))
+        })
+        .unwrap_or(false)
+}
+
 fn check_zsh_completions() -> bool {
     // Check $fpath directories for _loom
     if let Ok(fpath) = env::var("FPATH") {
@@ -244,20 +294,18 @@ fn check_zsh_completions() -> bool {
 
     // Check common locations
     if let Some(home) = home_dir() {
-        let common_paths = [
-            home.join(".zfunc/_loom"),
+        let zshrc = home.join(".zshrc");
+        let dot_zfunc = home.join(".zfunc/_loom");
+        if dot_zfunc.exists() && zsh_rc_loads_loom(&zshrc) {
+            return true;
+        }
+
+        let other_common_paths = [
             home.join(".zsh/completions/_loom"),
             home.join(".local/share/zsh/site-functions/_loom"),
         ];
-        for path in &common_paths {
+        for path in &other_common_paths {
             if path.exists() {
-                return true;
-            }
-        }
-
-        // Check if loom completions are sourced in .zshrc
-        if let Ok(content) = fs::read_to_string(home.join(".zshrc")) {
-            if content.contains("loom completions") || content.contains("_loom") {
                 return true;
             }
         }
@@ -280,22 +328,19 @@ fn check_zsh_completions() -> bool {
 
 fn check_bash_completions() -> bool {
     if let Some(home) = home_dir() {
-        let common_paths = [
-            home.join(".bash_completion.d/loom"),
-            home.join(".local/share/bash-completion/completions/loom"),
-        ];
-        for path in &common_paths {
-            if path.exists() {
-                return true;
-            }
+        let bashrc = home.join(".bashrc");
+        let bash_profile = home.join(".bash_profile");
+        let bash_completion_d = home.join(".bash_completion.d/loom");
+        if bash_completion_d.exists()
+            && (bash_rc_loads_loom(&bashrc) || bash_rc_loads_loom(&bash_profile))
+        {
+            return true;
         }
 
-        // Check if sourced in rc files
-        for rc in &[".bashrc", ".bash_profile"] {
-            if let Ok(content) = fs::read_to_string(home.join(rc)) {
-                if content.contains("loom completions") {
-                    return true;
-                }
+        let other_common_paths = [home.join(".local/share/bash-completion/completions/loom")];
+        for path in &other_common_paths {
+            if path.exists() {
+                return true;
             }
         }
     }
@@ -340,15 +385,14 @@ fn fix_completions() -> miette::Result<String> {
     let shell_name =
         detect_shell().ok_or_else(|| miette::miette!("could not detect shell ($SHELL not set)"))?;
 
-    let (shell, dest, extra_instructions) = match shell_name.as_str() {
+    let (shell, dest, rc_path, rc_block) = match shell_name.as_str() {
         "zsh" => {
             let home = home_dir().ok_or_else(|| miette::miette!("$HOME not set"))?;
             let dir = home.join(".zfunc");
             fs::create_dir_all(&dir)
                 .map_err(|e| miette::miette!("failed to create {}: {e}", dir.display()))?;
             let dest = dir.join("_loom");
-            let extra = "Ensure your ~/.zshrc contains:\n    fpath=(~/.zfunc $fpath)\n    autoload -Uz compinit && compinit".to_string();
-            (Shell::Zsh, dest, extra)
+            (Shell::Zsh, dest, home.join(".zshrc"), ZSH_COMPLETION_BLOCK)
         }
         "bash" => {
             let home = home_dir().ok_or_else(|| miette::miette!("$HOME not set"))?;
@@ -356,8 +400,12 @@ fn fix_completions() -> miette::Result<String> {
             fs::create_dir_all(&dir)
                 .map_err(|e| miette::miette!("failed to create {}: {e}", dir.display()))?;
             let dest = dir.join("loom");
-            let extra = "Ensure your ~/.bashrc sources completions:\n    for f in ~/.bash_completion.d/*; do source \"$f\"; done".to_string();
-            (Shell::Bash, dest, extra)
+            (
+                Shell::Bash,
+                dest,
+                home.join(".bashrc"),
+                BASH_COMPLETION_BLOCK,
+            )
         }
         "fish" => {
             let home = home_dir().ok_or_else(|| miette::miette!("$HOME not set"))?;
@@ -365,8 +413,7 @@ fn fix_completions() -> miette::Result<String> {
             fs::create_dir_all(&dir)
                 .map_err(|e| miette::miette!("failed to create {}: {e}", dir.display()))?;
             let dest = dir.join("loom.fish");
-            let extra = "Fish loads completions from this directory automatically.".to_string();
-            (Shell::Fish, dest, extra)
+            (Shell::Fish, dest, home.join(".config/fish/config.fish"), "")
         }
         _ => {
             return Err(miette::miette!(
@@ -382,18 +429,43 @@ fn fix_completions() -> miette::Result<String> {
     fs::write(&dest, &buf)
         .map_err(|e| miette::miette!("failed to write {}: {e}", dest.display()))?;
 
+    if !rc_block.is_empty() {
+        append_block_if_missing(&rc_path, rc_block, ZSH_COMPLETION_MARKER)?;
+    }
+
     Ok(format!(
-        "Installed {shell_name} completions to {}\n    {extra_instructions}",
-        dest.display()
+        "Installed {shell_name} completions to {}",
+        dest.display(),
     ))
+}
+
+fn append_block_if_missing(path: &Path, block: &str, marker: &str) -> miette::Result<()> {
+    let mut content = read_file_if_exists(path).unwrap_or_default();
+    if content.contains(marker) {
+        return Ok(());
+    }
+
+    if !content.is_empty() && !content.ends_with('\n') {
+        content.push('\n');
+    }
+    content.push_str(block);
+
+    fs::write(path, content).map_err(|e| miette::miette!("failed to write {}: {e}", path.display()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Mutex, MutexGuard, OnceLock};
+
+    fn env_lock() -> MutexGuard<'static, ()> {
+        static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+    }
 
     #[test]
     fn detect_shell_from_env() {
+        let _guard = env_lock();
         // Temporarily set SHELL for the test
         let original = env::var("SHELL").ok();
         env::set_var("SHELL", "/bin/zsh");
@@ -413,6 +485,7 @@ mod tests {
 
     #[test]
     fn check_fish_completions_in_temp_home() {
+        let _guard = env_lock();
         let tmpdir = tempfile::tempdir().unwrap();
         let fish_dir = tmpdir.path().join(".config/fish/completions");
         fs::create_dir_all(&fish_dir).unwrap();
@@ -431,6 +504,7 @@ mod tests {
 
     #[test]
     fn check_zsh_completions_in_temp_fpath() {
+        let _guard = env_lock();
         let tmpdir = tempfile::tempdir().unwrap();
         let fpath_dir = tmpdir.path().join("zfuncs");
         fs::create_dir_all(&fpath_dir).unwrap();
@@ -449,10 +523,19 @@ mod tests {
 
     #[test]
     fn check_bash_completions_in_temp_home() {
+        let _guard = env_lock();
         let tmpdir = tempfile::tempdir().unwrap();
         let comp_dir = tmpdir.path().join(".bash_completion.d");
         fs::create_dir_all(&comp_dir).unwrap();
         fs::write(comp_dir.join("loom"), "# completions").unwrap();
+        fs::write(
+            tmpdir.path().join(".bashrc"),
+            r#"if [ -f "$HOME/.bash_completion.d/loom" ]; then
+  . "$HOME/.bash_completion.d/loom"
+fi
+"#,
+        )
+        .unwrap();
 
         let original = env::var("HOME").ok();
         env::set_var("HOME", tmpdir.path().to_str().unwrap());
@@ -462,6 +545,94 @@ mod tests {
         match original {
             Some(v) => env::set_var("HOME", v),
             None => env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    fn check_zsh_completions_requires_shell_wiring_for_dot_zfunc() {
+        let _guard = env_lock();
+        let tmpdir = tempfile::tempdir().unwrap();
+        let zfunc_dir = tmpdir.path().join(".zfunc");
+        fs::create_dir_all(&zfunc_dir).unwrap();
+        fs::write(zfunc_dir.join("_loom"), "# completions").unwrap();
+
+        let original_home = env::var("HOME").ok();
+        let original_fpath = env::var("FPATH").ok();
+        env::set_var("HOME", tmpdir.path().to_str().unwrap());
+        env::remove_var("FPATH");
+
+        assert!(!check_zsh_completions());
+
+        fs::write(tmpdir.path().join(".zshrc"), ZSH_COMPLETION_BLOCK).unwrap();
+        assert!(check_zsh_completions());
+
+        match original_home {
+            Some(v) => env::set_var("HOME", v),
+            None => env::remove_var("HOME"),
+        }
+        match original_fpath {
+            Some(v) => env::set_var("FPATH", v),
+            None => env::remove_var("FPATH"),
+        }
+    }
+
+    #[test]
+    fn fix_completions_updates_zsh_startup_file() {
+        let _guard = env_lock();
+        let tmpdir = tempfile::tempdir().unwrap();
+        let original_home = env::var("HOME").ok();
+        let original_shell = env::var("SHELL").ok();
+        let original_fpath = env::var("FPATH").ok();
+
+        env::set_var("HOME", tmpdir.path().to_str().unwrap());
+        env::set_var("SHELL", "/bin/zsh");
+        env::remove_var("FPATH");
+
+        fix_completions().unwrap();
+
+        assert!(tmpdir.path().join(".zfunc/_loom").exists());
+        let zshrc = fs::read_to_string(tmpdir.path().join(".zshrc")).unwrap();
+        assert!(zshrc.contains(ZSH_COMPLETION_MARKER));
+        assert!(check_zsh_completions());
+
+        match original_home {
+            Some(v) => env::set_var("HOME", v),
+            None => env::remove_var("HOME"),
+        }
+        match original_shell {
+            Some(v) => env::set_var("SHELL", v),
+            None => env::remove_var("SHELL"),
+        }
+        match original_fpath {
+            Some(v) => env::set_var("FPATH", v),
+            None => env::remove_var("FPATH"),
+        }
+    }
+
+    #[test]
+    fn fix_completions_updates_bash_startup_file() {
+        let _guard = env_lock();
+        let tmpdir = tempfile::tempdir().unwrap();
+        let original_home = env::var("HOME").ok();
+        let original_shell = env::var("SHELL").ok();
+
+        env::set_var("HOME", tmpdir.path().to_str().unwrap());
+        env::set_var("SHELL", "/bin/bash");
+
+        fix_completions().unwrap();
+
+        assert!(tmpdir.path().join(".bash_completion.d/loom").exists());
+        let bashrc = fs::read_to_string(tmpdir.path().join(".bashrc")).unwrap();
+        assert!(bashrc.contains(BASH_COMPLETION_MARKER));
+        assert!(check_bash_completions());
+
+        match original_home {
+            Some(v) => env::set_var("HOME", v),
+            None => env::remove_var("HOME"),
+        }
+        match original_shell {
+            Some(v) => env::set_var("SHELL", v),
+            None => env::remove_var("SHELL"),
         }
     }
 }
