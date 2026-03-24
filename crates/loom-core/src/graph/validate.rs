@@ -139,6 +139,19 @@ fn check_warnings(ir: &WorkflowIR, diag: &mut Diagnostics) {
         }
     }
 
+    // Unused phases: phases not in any profile
+    let profile_phases: HashSet<String> = ir
+        .profiles
+        .values()
+        .flat_map(|p| p.phases.clone())
+        .collect();
+
+    for name in ir.phases.keys() {
+        if !profile_phases.contains(name) {
+            diag.warn(LoomWarning::UnusedPhase { name: name.clone() });
+        }
+    }
+
     // Single-outcome actions
     for (prompt_name, prompt) in &ir.prompts {
         if prompt.success.len() == 1 && prompt.failure.is_empty() {

@@ -81,6 +81,7 @@ pub enum LoomError {
 #[derive(Debug)]
 pub enum LoomWarning {
     UnusedStep { name: String },
+    UnusedPhase { name: String },
     SingleOutcomeAction { name: String },
 }
 
@@ -91,6 +92,12 @@ impl std::fmt::Display for LoomWarning {
                 write!(
                     f,
                     "warning: step '{name}' is declared but not used in any phase"
+                )
+            }
+            LoomWarning::UnusedPhase { name } => {
+                write!(
+                    f,
+                    "warning: phase '{name}' is declared but not used in any profile"
                 )
             }
             LoomWarning::SingleOutcomeAction { name } => {
