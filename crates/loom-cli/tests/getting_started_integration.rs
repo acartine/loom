@@ -619,7 +619,7 @@ print("python codegen assertions passed")
         // Steps
         let steps = table["steps"].as_table().expect("steps section");
         assert_eq!(steps.len(), 6, "expected 6 steps");
-        let plan_step = steps["plan"].as_table().expect("steps.plan");
+        let plan_step = steps["planning"].as_table().expect("steps.planning");
         assert_eq!(plan_step["action"].as_str().unwrap(), "planning");
 
         // Phases

@@ -441,8 +441,8 @@ mod tests {
 
         let steps = json["steps"].as_array().expect("steps should be an array");
         assert!(
-            steps.iter().any(|step| step["id"] == "plan"),
-            "plan step should be present in knots bundle"
+            steps.iter().any(|step| step["id"] == "planning"),
+            "planning step should be present in knots bundle"
         );
 
         let prompts = json["prompts"]
@@ -478,8 +478,8 @@ mod tests {
                 .as_array()
                 .expect("queue_to_action should be an array")
                 .iter()
-                .any(|step| step["id"] == "plan"),
-            "queue_to_action should include the plan step"
+                .any(|step| step["id"] == "planning"),
+            "queue_to_action should include the planning step"
         );
     }
 }

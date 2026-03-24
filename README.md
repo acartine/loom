@@ -60,7 +60,7 @@ For a fuller walkthrough, see [docs/getting-started.md](/Users/cartine/loom/docs
 
 A workflow directory contains:
 
-- `workflow.loom`: states, actions, steps, phases, and optional inline profiles
+- `workflow.loom`: actions, phases, profiles, and terminal/escape states
 - `loom.toml`: package metadata and default profile
 - `prompts/*.md`: markdown prompts with YAML frontmatter for outcomes and params
 - `profiles/*.loom`: optional profile files included from `workflow.loom`
@@ -100,7 +100,7 @@ knots_sdlc/
 1. Define states and actions in `workflow.loom`.
 2. Put each action prompt in `prompts/<prompt-name>.md`.
 3. Declare success and failure routing in the prompt frontmatter.
-4. Group steps into phases.
+4. Group actions into phases.
 5. Select phases and executors with profiles.
 6. Run `loom validate` until the graph is clean.
 7. Generate code with `loom build`.
@@ -129,12 +129,9 @@ workflow my_workflow v1 {
     terminal done
     escape   deferred
 
-    step plan -> planning
-    step plan_rev -> review
-
     phase main_phase {
-        produce plan
-        gate plan_rev
+        produce planning
+        gate review
     }
 }
 ```

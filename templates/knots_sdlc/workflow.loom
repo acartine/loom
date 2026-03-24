@@ -49,30 +49,21 @@ workflow knots_sdlc v1 {
     * -> abandoned
     * -> deferred
 
-    // -- Steps --
-
-    step plan -> planning
-    step plan_rev -> plan_review
-    step impl -> implementation
-    step impl_rev -> implementation_review
-    step ship -> shipment
-    step ship_rev -> shipment_review
-
     // -- Phases --
 
     phase planning_phase {
-        produce plan
-        gate plan_rev
+        produce planning
+        gate plan_review
     }
 
     phase implementation_phase {
-        produce impl
-        gate impl_rev
+        produce implementation
+        gate implementation_review
     }
 
     phase shipment_phase {
-        produce ship
-        gate ship_rev
+        produce shipment
+        gate shipment_review
     }
 
     // -- Profiles --
