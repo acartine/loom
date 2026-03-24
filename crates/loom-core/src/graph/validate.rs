@@ -71,16 +71,7 @@ fn check_dead_states(ir: &WorkflowIR, graph: &WorkflowGraph, diag: &mut Diagnost
         if let Some(&idx) = graph.node_indices.get(name) {
             let inbound = graph.graph.edges_directed(idx, Direction::Incoming).count();
             if inbound == 0 {
-                // Generate a short step name hint from the action name
-                let hint = name
-                    .split('_')
-                    .map(|w| w.chars().next().unwrap_or_default().to_string())
-                    .collect::<Vec<_>>()
-                    .join("");
-                diag.error(LoomError::DeadState {
-                    name: name.clone(),
-                    hint,
-                });
+                diag.error(LoomError::DeadState { name: name.clone() });
             }
         }
     }

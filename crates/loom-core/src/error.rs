@@ -41,8 +41,8 @@ pub enum LoomError {
         message: String,
     },
 
-    #[error("No step defined for action '{name}' — add a step to connect it to the workflow (e.g., `step {hint} -> {name}`)")]
-    DeadState { name: String, hint: String },
+    #[error("Action '{name}' is not used in any phase — add it to a phase (e.g., `phase my_phase {{ produce {name} }}`)")]
+    DeadState { name: String },
 
     #[error("Terminal unreachable: '{name}' cannot reach any terminal state")]
     TerminalUnreachable { name: String },
