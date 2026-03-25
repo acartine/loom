@@ -212,6 +212,12 @@ Without a compiler, workflow logic tends to sprawl across prompt templates, runt
 
 The reference fixture currently parses, validates, renders, diffs, checks compatibility, and generates Rust, Go, Python, TOML, and Knots bundle output. The repository also includes CI, tagged GitHub release automation, release tarballs, and a curl-based installer.
 
+## Related Projects
+
+Loom is the workflow definition and validation layer for [Knots](https://github.com/acartine/knots), which lets Knots support different workflow shapes instead of hard-coding a single one.
+
+[Knots](https://github.com/acartine/knots) is the workflow engine used by [Foolery](https://github.com/acartine/foolery), a web-based orchestrator for agent-driven software work.
+
 ## License
 
 [MIT](LICENSE)
