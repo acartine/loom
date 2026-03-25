@@ -62,7 +62,7 @@ workflow.loom + prompts + profiles
    loom validate
         │
         ▼
-   loom compile bundle
+   loom build --emit knots-bundle
         │
         ▼
   knots imports bundle
@@ -188,6 +188,6 @@ For custom Knots workflows:
 
 ## Next reads
 
-- [Configure and Install Your Own Knots Workflow](/Users/cartine/loom/docs/configure-and-install-a-custom-knots-workflow.md)
-- [How to Prompt Claude, Codex, Gemini, or OpenCode to Build a Workflow for You](/Users/cartine/loom/docs/how-to-prompt-an-agent-to-build-a-workflow.md)
-- [Loom Language Specification](/Users/cartine/loom/schema.md)
+- [Configure and Install Your Own Knots Workflow](configure-and-install-a-custom-knots-workflow.md)
+- [How to Prompt an Agent to Build a Workflow](how-to-prompt-an-agent-to-build-a-workflow.md)
+- [Loom Language Specification](../schema.md)

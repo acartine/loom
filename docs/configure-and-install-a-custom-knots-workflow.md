@@ -35,7 +35,7 @@ This creates a complete workflow package:
 If you are not sure which template to start from:
 
 ```bash
-loom templates list
+loom template list
 ```
 
 Common starting points:
@@ -43,9 +43,14 @@ Common starting points:
 - `minimal`: one produce step, one review step
 - `knots_sdlc`: planning, implementation, review, and shipment
 
-## Step 2. Rename the workflow for your team
+## Step 2. Set the workflow name for your team
 
-Open `loom.toml` and give the workflow a clear name.
+The best option is to choose the final name when you run `loom init --template ... <name>`.
+
+If you rename the scaffold after creation, update both:
+
+- `loom.toml`
+- the `workflow <name> v1` declaration in `workflow.loom`
 
 Example:
 
@@ -55,6 +60,12 @@ name = "payments_sdlc"
 version = 1
 entry = "workflow.loom"
 default_profile = "semiauto"
+```
+
+```loom
+workflow payments_sdlc v1 {
+    ...
+}
 ```
 
 Pick a name that describes the workflow, not the team member who created it.
@@ -198,6 +209,6 @@ That way the workflow logic stays the same while the ownership model changes.
 
 ## Next reads
 
-- [Under the Hood: How Knots and Loom Work Together](/Users/cartine/loom/docs/under-the-hood-knots-and-loom.md)
-- [How to Prompt Claude, Codex, Gemini, or OpenCode to Build a Workflow for You](/Users/cartine/loom/docs/how-to-prompt-an-agent-to-build-a-workflow.md)
-- [Loom Language Specification](/Users/cartine/loom/schema.md)
+- [Under the Hood: How Knots and Loom Work Together](under-the-hood-knots-and-loom.md)
+- [How to Prompt an Agent to Build a Workflow](how-to-prompt-an-agent-to-build-a-workflow.md)
+- [Loom Language Specification](../schema.md)

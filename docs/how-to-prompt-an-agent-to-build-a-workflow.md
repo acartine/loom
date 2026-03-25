@@ -1,4 +1,4 @@
-# How to Prompt Claude, Codex, Gemini, or OpenCode to Build a Workflow for You
+# How to Prompt an Agent to Build a Workflow
 
 You do not need to hand-write every Loom workflow from scratch.
 
@@ -37,7 +37,7 @@ Tell the agent:
 
 In this repo, the source of truth is:
 
-- [schema.md](/Users/cartine/loom/schema.md)
+- [schema.md](../schema.md)
 
 ## A good default prompt
 
@@ -46,7 +46,7 @@ Use this as a starting point:
 ```text
 Build a complete Loom workflow package for this process.
 
-Use the Loom schema at /Users/cartine/loom/schema.md as the source of truth.
+Use the Loom schema in schema.md from this repo checkout as the source of truth.
 
 Produce:
 - workflow.loom
@@ -75,7 +75,7 @@ Example:
 ```text
 Build a Loom workflow package for our release process.
 
-Use /Users/cartine/loom/schema.md as the source of truth.
+Use schema.md from this repo checkout as the source of truth.
 
 We want these stages:
 1. Release planning
@@ -147,43 +147,10 @@ Changes we want:
 - add a profile with all review gates owned by humans
 - rewrite the prompts to match incident response language
 
-Use /Users/cartine/loom/schema.md as the source of truth.
+Use schema.md from this repo checkout as the source of truth.
 ```
 
 That kind of prompt is usually stronger than asking for a workflow from nothing.
-
-## Per-agent guidance
-
-### Claude
-
-Claude usually does well when you ask it to:
-
-- reason about the workflow structure first
-- list states, steps, phases, and profiles before writing files
-- then produce the final files
-
-### Codex
-
-Codex usually does best when you ask for:
-
-- exact file outputs
-- schema-constrained syntax
-- no invented abstractions
-
-### Gemini
-
-Gemini usually benefits from:
-
-- explicit examples of desired outcomes
-- strict instructions not to invent unsupported syntax
-
-### OpenCode
-
-OpenCode works best when the prompt is concrete about:
-
-- file names
-- output format
-- routing rules
 
 ## Recommended final sentence in your prompt
 
@@ -197,6 +164,6 @@ That one instruction usually improves the result.
 
 ## Next reads
 
-- [Configure and Install Your Own Knots Workflow](/Users/cartine/loom/docs/configure-and-install-a-custom-knots-workflow.md)
-- [Under the Hood: How Knots and Loom Work Together](/Users/cartine/loom/docs/under-the-hood-knots-and-loom.md)
-- [Loom Language Specification](/Users/cartine/loom/schema.md)
+- [Configure and Install Your Own Knots Workflow](configure-and-install-a-custom-knots-workflow.md)
+- [Under the Hood: How Knots and Loom Work Together](under-the-hood-knots-and-loom.md)
+- [Loom Language Specification](../schema.md)

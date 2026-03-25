@@ -1,6 +1,5 @@
 # Loom
 
-![Coverage: 92%](https://img.shields.io/badge/coverage-92%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **A validating compiler for agent and human-in-the-loop workflows.**
@@ -20,13 +19,20 @@ Loom is not a workflow engine. It does not execute work. It compiles workflow de
 
 ## Quick Start
 
-Install with the standard curl flow:
+Install a published release with the standard curl flow:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/acartine/loom/main/install.sh | sh
 ```
 
-Or build from source:
+This path is for:
+
+- Linux `x86_64` and `aarch64`
+- macOS Apple Silicon (`aarch64`)
+
+The installer requires `curl`, `tar`, and `install`.
+
+Build from source if you are on another platform or want a local dev build:
 
 ```bash
 git clone https://github.com/acartine/loom.git
@@ -41,10 +47,12 @@ loom update
 loom update --check
 ```
 
+If you want to run from the repo without installing a binary, stay in the repo root and replace `loom` below with `cargo run -p loom-cli --`.
+
 List the bundled templates and scaffold the full Knots SDLC workflow:
 
 ```bash
-loom templates list
+loom template list
 loom init knots_sdlc
 cd knots_sdlc
 loom validate
@@ -54,7 +62,7 @@ loom graph --format mermaid > workflow.mmd
 
 `loom init knots_sdlc` creates the complete bundled workflow package: planning, implementation, review, shipment, six prompt files, and six execution profiles. If you want that same template under a different directory name, run `loom init --template knots_sdlc my_team_flow` instead.
 
-For a fuller walkthrough, see [docs/getting-started.md](/Users/cartine/loom/docs/getting-started.md).
+For a fuller walkthrough, see [docs/getting-started.md](docs/getting-started.md).
 
 ## How It Works
 
@@ -93,6 +101,7 @@ knots_sdlc/
   profiles/
     autopilot.loom
     semiauto.loom
+    ...
 ```
 
 ## Step-By-Step
@@ -107,7 +116,7 @@ knots_sdlc/
 
 The fastest evaluation loop is:
 
-1. Run `loom templates list`.
+1. Run `loom template list`.
 2. Run `loom init knots_sdlc`.
 3. Run `cd knots_sdlc && loom validate`.
 4. Run `loom build --lang rust`.
@@ -118,20 +127,26 @@ Example workflow fragment:
 
 ```loom
 workflow my_workflow v1 {
-    action planning {
+    action work {
         produce agent
     }
 
     action review {
-        gate review agent
+        gate review human
     }
 
     terminal done
-    escape   deferred
 
-    phase main_phase {
-        produce planning
-        gate review
+    step do_work -> work
+    step review_work -> review
+
+    phase main {
+        produce do_work
+        gate review_work
+    }
+
+    profile default "Default" {
+        phases [main]
     }
 }
 ```
@@ -141,19 +156,16 @@ Example prompt frontmatter:
 ```yaml
 ---
 accept:
-  - Implementation steps are concrete
-  - Risks are called out
+  - Work is complete
+  - Handoff notes are ready for review
 
 success:
-  plan_complete: ready_for_review
+  completed: ready_for_review
 
 failure:
-  insufficient_context: ready_for_planning
+  blocked: ready_for_work
 
-params:
-  complexity:
-    type: enum
-    values: ["small", "medium", "large"]
+params: {}
 ---
 ```
 
@@ -162,15 +174,18 @@ params:
 | Command | Description |
 |---------|-------------|
 | `loom init [--template <id>] <name>` | Scaffold a new workflow directory |
-| `loom templates list` | List bundled workflow templates |
+| `loom template list` | List bundled workflow templates |
 | `loom validate [dir]` | Parse, load prompts, validate the full graph, and print warnings |
 | `loom build [dir] --lang rust\|go\|python` | Validate and generate code |
-| `loom build [dir] --emit toml` | Emit TOML interchange output |
+| `loom build [dir] --emit toml\|knots-bundle` | Emit TOML or Knots bundle output |
 | `loom graph [dir] --format mermaid\|dot\|ascii` | Render the full graph or a profile subgraph |
 | `loom sim [dir] --profile <name>` | Walk the workflow interactively |
 | `loom diff <old-dir> <new-dir>` | Show structural changes between workflow versions |
 | `loom check-compat <old-dir> <new-dir>` | Check backward compatibility and optionally emit a state map |
 | `loom update [--check] [--force]` | Self-update an installed release binary using GitHub release asset redirects |
+| `loom doctor [--fix]` | Check the local install and optionally fix shell completions |
+| `loom uninstall [--force] [--purge]` | Remove an installed Loom binary |
+| `loom completions <shell>` | Generate shell completion scripts |
 
 ## Why This Is Useful
 
@@ -185,17 +200,17 @@ Without a compiler, workflow logic tends to sprawl across prompt templates, runt
 
 ## Docs
 
-- [Getting started guide](/Users/cartine/loom/docs/getting-started.md)
-- [Configure and install a custom Knots workflow](/Users/cartine/loom/docs/configure-and-install-a-custom-knots-workflow.md)
-- [Under the hood: Knots and Loom](/Users/cartine/loom/docs/under-the-hood-knots-and-loom.md)
-- [How to prompt an agent to build a workflow](/Users/cartine/loom/docs/how-to-prompt-an-agent-to-build-a-workflow.md)
-- [Release guide](/Users/cartine/loom/docs/releasing.md)
-- [Language specification](/Users/cartine/loom/schema.md)
-- [Contributing guide](/Users/cartine/loom/CONTRIBUTING.md)
+- [Getting started guide](docs/getting-started.md)
+- [Configure and install a custom Knots workflow](docs/configure-and-install-a-custom-knots-workflow.md)
+- [Under the hood: Knots and Loom](docs/under-the-hood-knots-and-loom.md)
+- [How to prompt an agent to build a workflow](docs/how-to-prompt-an-agent-to-build-a-workflow.md)
+- [Release guide](docs/releasing.md)
+- [Language specification](schema.md)
+- [Contributing guide](CONTRIBUTING.md)
 
 ## Status
 
-The current repo is feature-complete enough to evaluate end-to-end: the reference fixture parses, validates, renders, diffs, checks compatibility, and generates Rust, Go, Python, and TOML output. The repository now also includes CI, tagged GitHub release automation, release tarballs, and a curl-based installer.
+The reference fixture currently parses, validates, renders, diffs, checks compatibility, and generates Rust, Go, Python, TOML, and Knots bundle output. The repository also includes CI, tagged GitHub release automation, release tarballs, and a curl-based installer.
 
 ## License
 

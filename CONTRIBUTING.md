@@ -19,7 +19,7 @@ cargo run -p loom-cli -- validate tests/fixtures/knots_sdlc
 If you change the CLI, language semantics, or generated output, also run:
 
 ```bash
-cargo fmt --check
+cargo fmt --all --check
 cargo clippy --all-targets --all-features -- -D warnings
 ```
 
@@ -28,9 +28,9 @@ cargo clippy --all-targets --all-features -- -D warnings
 1. Change the smallest sensible layer: grammar, lowering, validation, graph, codegen, or CLI.
 2. Add or update focused tests.
 3. Run `cargo test`.
-4. If user-facing behavior changed, update [README.md](/Users/cartine/loom/README.md) or [docs/getting-started.md](/Users/cartine/loom/docs/getting-started.md).
-5. If language semantics changed, update [schema.md](/Users/cartine/loom/schema.md) in the same change.
-6. If install or release behavior changed, update [docs/releasing.md](/Users/cartine/loom/docs/releasing.md) and `install.sh`.
+4. If user-facing behavior changed, update [README.md](README.md) or [docs/getting-started.md](docs/getting-started.md).
+5. If language semantics changed, update [schema.md](schema.md) in the same change.
+6. If install or release behavior changed, update [docs/releasing.md](docs/releasing.md) and `install.sh`.
 
 ## Project Layout
 
@@ -139,8 +139,9 @@ Launch-facing docs should stay aligned with the shipped CLI. In practice that me
 - README examples must be copy-pasteable against the current repo
 - New commands or flags must be reflected in the README and spec when user-facing
 - `loom init` behavior should be documented as it actually scaffolds, not as an idealized future layout
-- If the onboarding flow changes, update [README.md](/Users/cartine/loom/README.md) and [docs/getting-started.md](/Users/cartine/loom/docs/getting-started.md) in the same change
-- If release assets or install behavior change, update [docs/releasing.md](/Users/cartine/loom/docs/releasing.md) in the same change
+- Public docs should use repo-relative Markdown links, not local filesystem paths
+- If the onboarding flow changes, update [README.md](README.md) and [docs/getting-started.md](docs/getting-started.md) in the same change
+- If release assets or install behavior change, update [docs/releasing.md](docs/releasing.md) in the same change
 
 ## Style
 

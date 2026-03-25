@@ -13,21 +13,27 @@ The release workflow publishes tarballs for:
 Each release also includes `loom-checksums.txt`, which the install script uses for checksum verification.
 Both `install.sh` and `loom update` resolve `latest` through GitHub's redirect-based release asset URLs (`/releases/latest/download/...`) instead of the Releases API, which avoids burning API rate limits for end users.
 
-## Recommended: `/release` skill
+## Before you tag
 
-The easiest way to cut a release is the Claude Code skill:
+Smoke-test the installer against a locally built release binary:
 
+```bash
+scripts/release/smoke-install.sh
 ```
-/release 0.2.0
-```
 
-This validates preconditions, bumps the version, runs checks, commits, tags, and pushes — all in one step.
+If you want to compare the published release and a local build side by side:
+
+```bash
+scripts/release/channel-install.sh release
+scripts/release/channel-install.sh local
+scripts/release/channel-use.sh show
+```
 
 ## Manual release checklist
 
-If you prefer to release manually (or the skill isn't available):
+Release manually with the checklist below:
 
-1. Update the version in the workspace [`Cargo.toml`](/Cargo.toml) (`[workspace.package]` section).
+1. Update the version in the workspace [`Cargo.toml`](../Cargo.toml) (`[workspace.package]` section).
 2. Sync the lockfile:
 
 ```bash
@@ -71,7 +77,7 @@ To test installs before pushing a new release, use the local channel installer:
 scripts/release/channel-install.sh local
 ```
 
-That builds the local release binary, serves a temporary mock release endpoint, and runs the real [`install.sh`](/Users/cartine/loom/install.sh) against it. To stage both the published release and your local build side by side:
+That builds the local release binary, serves a temporary mock release endpoint, and runs the real [`install.sh`](../install.sh) against it. To stage both the published release and your local build side by side:
 
 ```bash
 scripts/release/channel-install.sh release

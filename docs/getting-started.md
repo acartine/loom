@@ -4,9 +4,12 @@ This guide takes you from a fresh install to a validated workflow and generated 
 
 ## Before you start
 
-- Rust stable 1.75 or newer
-- Git
-- Optional: Go 1.21+ or Python 3.10+ if you want to compile generated artifacts for those targets
+Choose one install path:
+
+- Published release: supported on Linux `x86_64` and `aarch64`, and macOS Apple Silicon (`aarch64`). Requires `curl`, `tar`, and `install`.
+- Source build: requires Rust stable 1.75 or newer and Git.
+
+Optional: Go 1.21+ or Python 3.10+ if you want to compile generated artifacts for those targets.
 
 ## 1. Install the CLI
 
@@ -31,12 +34,12 @@ loom update
 loom update --check
 ```
 
-If you do not want to install the binary yet, clone the repo and replace `loom` with `cargo run -p loom-cli --` in the commands below.
+If you do not want to install the binary yet, clone the repo and replace `loom` with `cargo run -p loom-cli --` in the commands below. Run those commands from the repo root.
 
 ## 2. Inspect the bundled templates
 
 ```bash
-loom templates list
+loom template list
 ```
 
 Loom ships with:
@@ -65,7 +68,7 @@ The scaffold contains the full bundled workflow package:
 - `workflow.loom`: the workflow definition
 - `loom.toml`: package metadata
 - `prompts/`: prompt files for planning, plan review, implementation, implementation review, shipment, and shipment review
-- `profiles/`: bundled profiles such as `autopilot`, `autopilot_with_pr`, and `semiauto`
+- `profiles/`: bundled profiles such as `autopilot`, `autopilot_with_pr`, `semiauto`, and their `*_no_planning` variants
 
 ## 4. Read the scaffold
 
@@ -73,8 +76,12 @@ The generated workflow is the full Knots SDLC shape:
 
 ```loom
 workflow knots_sdlc v1 {
+
+    // -- Action States --
+
     action planning {
         produce agent
+        output note "kno show"
     }
 
     action plan_review {
@@ -86,6 +93,7 @@ workflow knots_sdlc v1 {
 
     action implementation {
         produce agent
+        output branch
     }
 
     action implementation_review {
@@ -97,6 +105,7 @@ workflow knots_sdlc v1 {
 
     action shipment {
         produce agent
+        output commit
     }
 
     action shipment_review {
@@ -106,34 +115,42 @@ workflow knots_sdlc v1 {
         constraint metadata_only
     }
 
+    // -- Terminal & Escape States --
+
     terminal shipped
     terminal abandoned
     escape   deferred
 
+    // -- Wildcard Transitions --
+
     * -> abandoned
     * -> deferred
 
-    step plan -> planning
-    step plan_rev -> plan_review
-    step impl -> implementation
-    step impl_rev -> implementation_review
-    step ship -> shipment
-    step ship_rev -> shipment_review
+    // -- Phases --
 
     phase planning_phase {
-        produce plan
-        gate plan_rev
+        produce planning
+        gate plan_review
     }
 
     phase implementation_phase {
-        produce impl
-        gate impl_rev
+        produce implementation
+        gate implementation_review
     }
 
     phase shipment_phase {
-        produce ship
-        gate ship_rev
+        produce shipment
+        gate shipment_review
     }
+
+    // -- Profiles --
+
+    include "profiles/autopilot.loom"
+    include "profiles/autopilot_with_pr.loom"
+    include "profiles/semiauto.loom"
+    include "profiles/autopilot_no_planning.loom"
+    include "profiles/autopilot_with_pr_no_planning.loom"
+    include "profiles/semiauto_no_planning.loom"
 }
 ```
 
@@ -200,7 +217,7 @@ That uses the default `minimal` template: one produce step, one review step, one
 
 ## Next references
 
-- [`README.md`](/Users/cartine/loom/README.md)
-- [`docs/releasing.md`](/Users/cartine/loom/docs/releasing.md)
-- [`schema.md`](/Users/cartine/loom/schema.md)
-- [`CONTRIBUTING.md`](/Users/cartine/loom/CONTRIBUTING.md)
+- [`README.md`](../README.md)
+- [`docs/releasing.md`](releasing.md)
+- [`schema.md`](../schema.md)
+- [`CONTRIBUTING.md`](../CONTRIBUTING.md)
