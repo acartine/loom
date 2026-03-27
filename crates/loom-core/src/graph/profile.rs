@@ -116,8 +116,8 @@ mod tests {
     fn test_extract_autopilot() {
         let ir = load_ir();
         let sub = extract_profile_subgraph(&ir, "autopilot").unwrap();
-        // All 3 phases -> 6 steps -> 12 queue/action states + 2 terminals + 1 escape = 15
-        assert_eq!(sub.states.len(), 15);
+        // All 3 phases -> 6 steps -> 12 queue/action states + 2 terminals + 2 escapes = 16
+        assert_eq!(sub.states.len(), 16);
         assert_eq!(sub.steps.len(), 6);
         assert_eq!(sub.phases.len(), 3);
     }

@@ -460,8 +460,8 @@ mod tests {
         let wf = parse_workflow(&input).unwrap();
         assert_eq!(wf.name, "knots_sdlc");
         assert_eq!(wf.version, 1);
-        // 6 actions + 2 terminals + 1 escape + 2 wildcards + 3 phases + 6 includes = 20
-        assert_eq!(wf.declarations.len(), 20);
+        // 6 actions + 2 terminals + 2 escapes + 2 wildcards + 3 phases + 6 includes = 21
+        assert_eq!(wf.declarations.len(), 21);
     }
 
     #[test]

@@ -154,7 +154,7 @@ mod tests {
         let (ir, _) = lower(&ast, &fixture_dir()).unwrap();
         let graph = build_graph(&ir);
 
-        assert_eq!(graph.graph.node_count(), 15);
+        assert_eq!(graph.graph.node_count(), 16);
         // Should have edges: 6 step claims + outcomes from 6 prompts + wildcards
         assert!(graph.graph.edge_count() > 0);
     }

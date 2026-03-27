@@ -196,12 +196,12 @@ fn main() {
         State::Planning, State::PlanReview,
         State::Implementation, State::ImplementationReview,
         State::Shipment, State::ShipmentReview,
-        State::Shipped, State::Abandoned, State::Deferred,
+        State::Shipped, State::Abandoned, State::Blocked, State::Deferred,
         State::ReadyForPlanning, State::ReadyForPlanReview,
         State::ReadyForImplementation, State::ReadyForImplementationReview,
         State::ReadyForShipment, State::ReadyForShipmentReview,
     ];
-    assert_eq!(all_states.len(), 15, "expected 15 states");
+    assert_eq!(all_states.len(), 16, "expected 16 states");
     for s in &all_states {
         assert!(!s.display_name().is_empty(), "{:?} display_name empty", s);
     }
@@ -216,7 +216,7 @@ fn main() {
     assert!(PlanningOutcome::PlanComplete.is_success());
     assert!(!PlanningOutcome::InsufficientContext.is_success());
     assert_eq!(PlanningOutcome::PlanComplete.target(), State::ReadyForPlanReview);
-    assert_eq!(PlanningOutcome::BlockedByDependency.target(), State::Deferred);
+    assert_eq!(PlanningOutcome::BlockedByDependency.target(), State::Blocked);
 
     assert!(ShipmentReviewOutcome::Approved.is_success());
     assert!(!ShipmentReviewOutcome::NeedsRevision.is_success());
@@ -248,9 +248,9 @@ fn main() {
     let s = apply(State::ImplementationReview, Outcome::ImplementationReview(ImplementationReviewOutcome::ChangesRequested)).unwrap();
     assert_eq!(s, State::ReadyForImplementation, "changes requested loops back");
 
-    // ── apply(): escape to deferred ──
+    // ── apply(): escape to blocked ──
     let s = apply(State::Planning, Outcome::Planning(PlanningOutcome::BlockedByDependency)).unwrap();
-    assert_eq!(s, State::Deferred);
+    assert_eq!(s, State::Blocked);
 
     // ── apply(): mismatched outcome type is error ──
     assert!(apply(State::Planning, Outcome::Shipment(ShipmentOutcome::ShipmentComplete)).is_err());
@@ -316,12 +316,12 @@ import "testing"
 func TestAllStatesHaveDisplayNames(t *testing.T) {
 	states := []State{
 		Planning, PlanReview, Implementation, ImplementationReview,
-		Shipment, ShipmentReview, Shipped, Abandoned, Deferred,
+		Shipment, ShipmentReview, Shipped, Abandoned, Blocked, Deferred,
 		ReadyForPlanning, ReadyForPlanReview, ReadyForImplementation,
 		ReadyForImplementationReview, ReadyForShipment, ReadyForShipmentReview,
 	}
-	if len(states) != 15 {
-		t.Fatalf("expected 15 states, got %d", len(states))
+	if len(states) != 16 {
+		t.Fatalf("expected 16 states, got %d", len(states))
 	}
 	for _, s := range states {
 		if s.DisplayName() == "" {
@@ -452,7 +452,7 @@ func TestProfiles(t *testing.T) {
 
 # ── State enum completeness ──
 all_states = list(State)
-assert len(all_states) == 15, f"expected 15 states, got {len(all_states)}"
+assert len(all_states) == 16, f"expected 16 states, got {len(all_states)}"
 for s in all_states:
     assert s.display_name, f"{s} has empty display_name"
 
@@ -468,7 +468,7 @@ assert Executor.HUMAN.value == 1
 
 # ── Outcome target() ──
 assert PlanningOutcome.PLAN_COMPLETE.target() == State.READY_FOR_PLAN_REVIEW
-assert PlanningOutcome.BLOCKED_BY_DEPENDENCY.target() == State.DEFERRED
+assert PlanningOutcome.BLOCKED_BY_DEPENDENCY.target() == State.BLOCKED
 assert ShipmentReviewOutcome.APPROVED.target() == State.SHIPPED
 
 # ── Outcome is_success() ──
@@ -504,9 +504,9 @@ assert s == State.READY_FOR_PLANNING, "insufficient context loops back"
 s = apply(State.IMPLEMENTATION_REVIEW, ImplementationReviewOutcome.CHANGES_REQUESTED)
 assert s == State.READY_FOR_IMPLEMENTATION, "changes requested loops back"
 
-# ── apply(): escape to deferred ──
+# ── apply(): escape to blocked ──
 s = apply(State.PLANNING, PlanningOutcome.BLOCKED_BY_DEPENDENCY)
-assert s == State.DEFERRED
+assert s == State.BLOCKED
 
 # ── apply(): mismatched outcome raises ValueError ──
 try:
@@ -580,7 +580,7 @@ print("python codegen assertions passed")
 
         // States: check count, kinds, and key action states
         let states = table["states"].as_table().expect("states section");
-        assert_eq!(states.len(), 15, "expected 15 states, got {}", states.len());
+        assert_eq!(states.len(), 16, "expected 16 states, got {}", states.len());
 
         let planning = states["planning"].as_table().expect("states.planning");
         assert_eq!(planning["kind"].as_str().unwrap(), "action");

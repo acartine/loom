@@ -118,6 +118,10 @@ params: {}
 ---
 ```
 
+If a step should pause until another knot ships, prefer `escape blocked` plus a
+failure outcome like `blocked_by_dependency: blocked` over inventing a polling
+action.
+
 The important idea is simple: the prompt decides where the workflow goes next.
 
 ## Step 5. Validate before you install

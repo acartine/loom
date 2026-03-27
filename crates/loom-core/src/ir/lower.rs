@@ -598,7 +598,7 @@ mod tests {
 
         assert_eq!(ir.name, "knots_sdlc");
         assert_eq!(ir.version, 1);
-        assert_eq!(ir.states.len(), 15); // 6 queues + 6 actions + 2 terminals + 1 escape
+        assert_eq!(ir.states.len(), 16); // 6 queues + 6 actions + 2 terminals + 2 escapes
         assert_eq!(ir.steps.len(), 6);
         assert_eq!(ir.phases.len(), 3);
         assert_eq!(ir.profiles.len(), 6);

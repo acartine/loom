@@ -119,6 +119,7 @@ workflow knots_sdlc v1 {
 
     terminal shipped
     terminal abandoned
+    escape   blocked
     escape   deferred
 
     // -- Wildcard Transitions --
@@ -153,6 +154,9 @@ workflow knots_sdlc v1 {
     include "profiles/semiauto_no_planning.loom"
 }
 ```
+
+In this template, `blocked` and `deferred` are escape states: they are waiting
+states, not action steps or terminal outcomes.
 
 The generated template gives you:
 

@@ -87,6 +87,8 @@ A user-installed workflow should not require:
 That approach is fragile and operationally expensive.
 
 Instead, Knots loads a compiled Loom workflow bundle with a stable runtime format.
+That bundle preserves queue, action, terminal, and escape states distinctly, so
+passive waiting states such as `blocked` stay non-actionable at runtime.
 
 ## So where does the strong typing live?
 

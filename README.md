@@ -73,6 +73,9 @@ A workflow directory contains:
 - `prompts/*.md`: markdown prompts with YAML frontmatter for outcomes and params
 - `profiles/*.loom`: optional profile files included from `workflow.loom`
 
+Escape states are non-terminal waiting states, so they are valid prompt
+targets without becoming claimable actions.
+
 Minimal example:
 
 ```text
