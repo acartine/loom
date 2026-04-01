@@ -1,6 +1,7 @@
 # Loom
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Join thecartine Discord](https://img.shields.io/badge/Discord-Join%20thecartine-5865F2?logo=discord&logoColor=white)](https://discord.gg/KPgNPMAzrP)
 
 **A validating compiler for agent and human-in-the-loop workflows.**
 
