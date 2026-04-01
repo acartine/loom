@@ -1,5 +1,7 @@
 # Contributing to Loom
 
+[![Join thecartine Discord](https://img.shields.io/badge/Discord-Join%20thecartine-5865F2?logo=discord&logoColor=white)](https://discord.gg/KPgNPMAzrP)
+
 ## Prerequisites
 
 - Rust stable 1.75+
